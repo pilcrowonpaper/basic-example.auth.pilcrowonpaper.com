@@ -456,10 +456,11 @@ func createResetPasswordSetNewPasswordPageHTML(requestId string, passwordResetTo
 var baseStylesheet string
 
 func createPageHTML(requestId string, title string, bodyHTML string, script string, stylesheet string, dataJSON string) string {
-	// TODO: Update meta
 	htmlTemplate := `<html lang="en">
 <head>
 	<title>%s</title>
+	<meta name="description" content="A basic email address and password auth example." />
+
 	<meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
 
@@ -467,10 +468,12 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="en_US" />
 	<meta property="og:site_name" content="Basic auth example" />
+	<meta property="og:description" content="A basic email address and password auth example." />
 	<meta property="og:url" content="https://basic-example.auth.pilcrowonpaper.com" />
+	<meta property="og:image" content="https://pilcrowonpaper.com/profile.jpg" />
 
-	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content="%s" />
+	<meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@pilcrowonpaper">
 
 	<style>%s</style>
 	<style>%s</style>
