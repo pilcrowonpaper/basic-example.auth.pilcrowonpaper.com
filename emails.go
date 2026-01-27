@@ -1,28 +1,80 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
-func sendSignupEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
-	fmt.Printf("To %s: Your email address verification code is %s.\n", emailAddress, emailAddressVerificationCode)
+func (server *serverStruct) sendSignupEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
+	subject := "Verify your email address"
+	bodyTemplate := `Your email address verification code is: %s
+
+Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
+
+Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
+	body := fmt.Sprintf(bodyTemplate, emailAddressVerificationCode)
+
+	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %s", err.Error())
+	}
 	return nil
 }
 
-func sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
-	fmt.Printf("To %s: Your email address verification code is %s.\n", emailAddress, emailAddressVerificationCode)
+func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
+	subject := "Verify your new email address"
+	bodyTemplate := `Your email address verification code is: %s
+
+Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
+
+Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
+	body := fmt.Sprintf(bodyTemplate, emailAddressVerificationCode)
+
+	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %s", err.Error())
+	}
 	return nil
 }
 
-func sendPasswordResetVerificationEmail(emailAddress string, verificationCode string) error {
-	fmt.Printf("To %s: Your password reset one-time password is %s.\n", emailAddress, verificationCode)
+func (server *serverStruct) sendPasswordResetOneTimePasswordEmail(emailAddress string, oneTimePassword string) error {
+	subject := "Verify your identity"
+	bodyTemplate := `Your password reset one-time password is: %s
+
+Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
+
+Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
+	body := fmt.Sprintf(bodyTemplate, oneTimePassword)
+
+	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %s", err.Error())
+	}
 	return nil
 }
 
-func sendEmailAddressUpdatedEmail(emailAddress string) error {
-	fmt.Printf("To %s: Your account email address was recently updated.\n", emailAddress)
+func (server *serverStruct) sendEmailAddressUpdatedEmail(emailAddress string) error {
+	subject := "Your account's email address was recently updated"
+	body := `This email address is no longer tied to your account.
+
+Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
+
+	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %s", err.Error())
+	}
 	return nil
 }
 
-func sendPasswordUpdatedEmail(emailAddress string) error {
-	fmt.Printf("To %s: Your account password was recently updated.\n", emailAddress)
+func (server *serverStruct) sendPasswordUpdatedEmail(emailAddress string) error {
+	subject := "Your account's password was recently updated"
+	body := `Your account password was recently updated. If you did not make this change, please reset your password immediately.
+
+Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
+
+	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %s", err.Error())
+	}
 	return nil
 }

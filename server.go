@@ -14,6 +14,8 @@ import (
 )
 
 type serverStruct struct {
+	emailClient emailClientInterface
+
 	databaseReadConnectionPool  *sqlitex.Pool
 	databaseWriteConnectionPool *sqlitex.Pool
 	cpuIntensiveSemaphore       *semaphore.Weighted
@@ -38,7 +40,7 @@ type serverFlagsStruct struct {
 	https bool
 }
 
-func createServer(flags serverFlagsStruct, logging serverLoggingStruct) (*serverStruct, error) {
+func createServer(emailClient emailClientInterface, flags serverFlagsStruct, logging serverLoggingStruct) (*serverStruct, error) {
 	databaseFilename := "main.db"
 
 	databaseReadConnectionPool, err := sqlitex.NewPool(databaseFilename, sqlitex.PoolOptions{
@@ -79,6 +81,7 @@ func createServer(flags serverFlagsStruct, logging serverLoggingStruct) (*server
 	emailRateLimit := ratelimit.NewLimit(1_000, 3, 30*time.Minute)
 
 	server := &serverStruct{
+		emailClient:                         emailClient,
 		databaseReadConnectionPool:          databaseReadConnectionPool,
 		databaseWriteConnectionPool:         databaseWriteConnectionPool,
 		cpuIntensiveSemaphore:               cpuIntensiveSemaphore,

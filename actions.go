@@ -71,7 +71,7 @@ func (server *serverStruct) createSignupAction(requestId string, emailAddress st
 
 	server.logSignupCreatedActionEvent(requestId, signup.id)
 
-	err = sendSignupEmailAddressVerificationCodeEmail(signup.emailAddress, signup.emailAddressVerificationCode)
+	err = server.sendSignupEmailAddressVerificationCodeEmail(signup.emailAddress, signup.emailAddressVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send signup email address verification code email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -138,7 +138,7 @@ func (server *serverStruct) sendSignupEmailAddressVerificationCodeAction(request
 		return errorCodeRateLimited
 	}
 
-	err = sendSignupEmailAddressVerificationCodeEmail(signup.emailAddress, signup.emailAddressVerificationCode)
+	err = server.sendSignupEmailAddressVerificationCodeEmail(signup.emailAddress, signup.emailAddressVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send signup email address verification code email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -579,7 +579,7 @@ func (server *serverStruct) setPasswordUpdateNewPasswordAction(requestId string,
 		return "", errorCodeUnexpectedError
 	}
 
-	err = sendPasswordUpdatedEmail(user.emailAddress)
+	err = server.sendPasswordUpdatedEmail(user.emailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password update email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -811,7 +811,7 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId
 		return errorCodeUnexpectedError
 	}
 
-	err = sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(newEmailAddress, newEmailAddressVerificationCode)
+	err = server.sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(newEmailAddress, newEmailAddressVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send email address update new email address verification code email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -874,7 +874,7 @@ func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCod
 		return errorCodeRateLimited
 	}
 
-	err = sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddressUpdate.newEmailAddress, emailAddressUpdate.newEmailAddressVerificationCode)
+	err = server.sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddressUpdate.newEmailAddress, emailAddressUpdate.newEmailAddressVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send email address update new email address verification code email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -970,7 +970,7 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationC
 
 	server.logUserEmailAddressUpdatedActionEvent(requestId, user.id, emailAddressUpdate.newEmailAddress)
 
-	err = sendEmailAddressUpdatedEmail(oldEmailAddress)
+	err = server.sendEmailAddressUpdatedEmail(oldEmailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send email address update email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -1208,7 +1208,7 @@ func (server *serverStruct) createPasswordResetAction(requestId string, emailAdd
 
 	server.logPasswordResetCreatedActionEvent(requestId, passwordReset.id, user.id)
 
-	err = sendPasswordResetVerificationEmail(user.emailAddress, passwordResetVerificationCode)
+	err = server.sendPasswordResetOneTimePasswordEmail(user.emailAddress, passwordResetVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password reset verification email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -1348,7 +1348,7 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeUnexpectedError
 	}
 
-	err = sendPasswordUpdatedEmail(user.emailAddress)
+	err = server.sendPasswordUpdatedEmail(user.emailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password update email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)

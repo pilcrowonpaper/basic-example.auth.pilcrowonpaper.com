@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base32"
 	"errors"
@@ -12,6 +13,10 @@ import (
 	"time"
 
 	_ "embed"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 )
 
 const databaseFilename = "main.db"
@@ -25,6 +30,20 @@ func main() {
 		portString = "3000"
 	}
 	httpsEnvValue := os.Getenv("HTTPS")
+	if httpsEnvValue == "" {
+		httpsEnvValue = "0"
+	}
+	awsSESEnvValue := os.Getenv("AWS_SES")
+	if awsSESEnvValue == "" {
+		awsSESEnvValue = "0"
+	}
+	awsAccessKeyEnvValue := os.Getenv("AWS_ACCESS_KEY_ID")
+	awsSecretAccessKeyEnvValue := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	awsRegionEnvValue := os.Getenv("AWS_REGION")
+	if awsRegionEnvValue == "" {
+		awsRegionEnvValue = "us-east-1"
+	}
+	awsSESEmailAddressEnvValue := os.Getenv("AWS_SES_EMAIL_ADDRESS")
 	logsEnvValue := os.Getenv("LOGS")
 	if logsEnvValue == "" {
 		logsEnvValue = "action_error,background_job"
@@ -33,6 +52,26 @@ func main() {
 	port, err := parseNonNegativeIntegerString(portString)
 	if err != nil {
 		log.Fatalf("invalid PORT environment variable: %s", err.Error())
+	}
+
+	var emailClient emailClientInterface
+	fmt.Println(awsSESEnvValue)
+	if awsSESEnvValue == "1" {
+		staticProvider := credentials.NewStaticCredentialsProvider(awsAccessKeyEnvValue, awsSecretAccessKeyEnvValue, "")
+
+		cfg, err := config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(awsRegionEnvValue),
+			config.WithCredentialsProvider(staticProvider),
+		)
+		if err != nil {
+			log.Fatalf("failed to load config, %v", err)
+		}
+
+		awsSESClient := sesv2.NewFromConfig(cfg)
+
+		emailClient = newAWSSESEmailClient(awsSESClient, awsSESEmailAddressEnvValue)
+	} else {
+		emailClient = stdoutEmailClient
 	}
 
 	serverLogging := serverLoggingStruct{}
@@ -59,7 +98,7 @@ func main() {
 	serverFlags := serverFlagsStruct{
 		https: httpsEnvValue == "1",
 	}
-	server, err := createServer(serverFlags, serverLogging)
+	server, err := createServer(emailClient, serverFlags, serverLogging)
 	if err != nil {
 		log.Fatalf("failed to create server: %s\n", err.Error())
 	}
