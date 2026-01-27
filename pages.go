@@ -423,6 +423,17 @@ func createResetPasswordVerifyOneTimePasswordPageHTML(requestId string, password
 	return pageHTML
 }
 
+func createUnexpectedErrorErrorPageHTML(requestId string) string {
+	title := "An unexpected error occurred | Basic auth example"
+
+	bodyHTML := `<h1>An unexpected error occurred</h1>
+<p>Something went wrong. Please refresh the page or try again later.</p>`
+
+	pageHTML := createPageHTML(requestId, title, bodyHTML, "", "", "")
+
+	return pageHTML
+}
+
 //go:embed assets/reset_password_set_new_password.js
 var resetPasswordSetNewPasswordPageScript string
 

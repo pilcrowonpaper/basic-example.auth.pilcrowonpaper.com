@@ -99,6 +99,7 @@ func createServer(emailClient emailClientInterface, flags serverFlagsStruct, log
 }
 
 func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	requestId := r.Header.Get("X-Railway-Request-Id")
 	if requestId == "" {
 		requestId = generateLongItemId()

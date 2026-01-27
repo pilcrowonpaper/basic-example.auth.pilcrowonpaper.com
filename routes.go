@@ -708,7 +708,8 @@ func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -728,7 +729,8 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -742,7 +744,8 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -761,7 +764,8 @@ func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Reque
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -780,7 +784,8 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -794,7 +799,8 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -819,7 +825,8 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -833,7 +840,8 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -858,7 +866,8 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -878,7 +887,8 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -892,7 +902,8 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -925,7 +936,8 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -939,7 +951,8 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -972,7 +985,8 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -986,7 +1000,8 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1019,7 +1034,8 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1033,7 +1049,8 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1071,7 +1088,8 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1085,7 +1103,8 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1111,7 +1130,8 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 		errorMessage := "news email address verification code not defined"
 		server.logActionError(requestId, errorMessage)
 		server.setBlankEmailAddressUpdateTokenCookie(w)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1131,7 +1151,8 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1145,7 +1166,8 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1178,7 +1200,8 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1192,7 +1215,8 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1231,7 +1255,8 @@ func (server *serverStruct) resetPasswordVerifyOneTimePasswordPageRoute(w http.R
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1256,7 +1281,8 @@ func (server *serverStruct) resetPasswordVerifyOneTimePasswordPageRoute(w http.R
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get password reset user: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1276,7 +1302,8 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
@@ -1298,7 +1325,8 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get password reset user: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
-		w.WriteHeader(500)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
 		return
 	}
 
