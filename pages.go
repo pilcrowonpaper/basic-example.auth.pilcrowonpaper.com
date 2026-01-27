@@ -15,7 +15,7 @@ var homePageStylesheet string
 func createHomePageHTML(requestId string) string {
 	title := "Basic auth example"
 	bodyHTML := `<h1>Basic auth example</h1>
-<p>This is a website that implements basic email address and password auth using best practices. It supports email address verification, password update, email address update, password reset, and account deletion.</p>
+<p>This is a website that implements basic email address and password auth using best practices. It supports email address verification, password update, email address update, password reset, and account deletion. All accounts are automatically deleted at midnight (UTC).</p>
 <div id="auth">
 	<a href="/sign-in">Sign in</a>
 	<a href="/sign-up">Create an account</a>
