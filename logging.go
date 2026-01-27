@@ -18,7 +18,7 @@ func (server *serverStruct) logActionSuccessResult(requestId string, actionName 
 	logJSONBuilder.AddString("type", "action_success_result")
 	logJSONBuilder.AddInt64("timestamp", now.Unix())
 	logJSONBuilder.AddString("request_id", requestId)
-	logJSONBuilder.AddJSON("action", actionName)
+	logJSONBuilder.AddString("action", actionName)
 	logJSON := logJSONBuilder.Done()
 
 	fmt.Println(logJSON)
@@ -35,8 +35,8 @@ func (server *serverStruct) logActionErrorResult(requestId string, actionName st
 	logJSONBuilder.AddString("type", "action_error_result")
 	logJSONBuilder.AddInt64("timestamp", now.Unix())
 	logJSONBuilder.AddString("request_id", requestId)
-	logJSONBuilder.AddJSON("action", actionName)
-	logJSONBuilder.AddJSON("error_code", errorCode)
+	logJSONBuilder.AddString("action", actionName)
+	logJSONBuilder.AddString("error_code", errorCode)
 	logJSON := logJSONBuilder.Done()
 
 	fmt.Println(logJSON)
@@ -53,7 +53,7 @@ func (server *serverStruct) logActionError(requestId string, errorMessage string
 	logJSONBuilder.AddString("type", "action_error")
 	logJSONBuilder.AddInt64("timestamp", now.Unix())
 	logJSONBuilder.AddString("request_id", requestId)
-	logJSONBuilder.AddJSON("message", errorMessage)
+	logJSONBuilder.AddString("message", errorMessage)
 	logJSON := logJSONBuilder.Done()
 
 	fmt.Println(logJSON)
@@ -87,7 +87,7 @@ func (server *serverStruct) logBackgroundJobError(runId string, errorMessage str
 	logJSONBuilder.AddString("type", "background_job_error")
 	logJSONBuilder.AddString("run_id", runId)
 	logJSONBuilder.AddInt64("timestamp", now.Unix())
-	logJSONBuilder.AddJSON("message", errorMessage)
+	logJSONBuilder.AddString("message", errorMessage)
 	logJSON := logJSONBuilder.Done()
 
 	fmt.Println(logJSON)
