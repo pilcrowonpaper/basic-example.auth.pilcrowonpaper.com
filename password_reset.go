@@ -230,7 +230,7 @@ func (server *serverStruct) setPasswordResetAsFirstFactorVerified(passwordResetI
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE password_reset SET first_factor_verified = 1 WHERE id = ?", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE password_reset SET first_factor_verified = 1 WHERE id = ? AND first_factor_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{passwordResetId},
 	})
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -256,7 +256,7 @@ func (server *serverStruct) completePasswordReset(passwordResetId string, newUse
 	}
 
 	userIds := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET password_hash = ?, password_salt = ? FROM password_reset WHERE user.id = password_reset.user_id AND password_reset.id = ? RETURNING user.id", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET password_hash = ?, password_salt = ? FROM password_reset WHERE user.id = password_reset.user_id AND password_reset.id = ? AND password_reset.first_factor_verified = 1 RETURNING user.id", &sqlitex.ExecOptions{
 		Args: []any{newUserPasswordHash, newUserPasswordSalt, passwordResetId},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			userId := stmt.ColumnText(0)
@@ -366,4 +366,24 @@ func (server *serverStruct) getPasswordResetUser(passwordResetId string) (userSt
 	}
 
 	return users[0], nil
+}
+
+func (server *serverStruct) deletePasswordReset(passwordResetId string) error {
+	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to take database write connection: %s", err.Error())
+	}
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_reset WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{passwordResetId},
+	})
+	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		return fmt.Errorf("failed to delete from password_reset table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errPasswordResetNotFound
+	}
+	return nil
 }

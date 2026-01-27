@@ -17,7 +17,8 @@ func (stdoutEmailClient *stdoutEmailClientStruct) sendEmail(ctx context.Context,
 	template := `[Email] To: %s
 Subject: %s
 
-%s\n`
+%s
+`
 	fmt.Printf(template, toEmailAddress, subject, body)
 
 	return nil

@@ -190,7 +190,7 @@ func (server *serverStruct) setPasswordUpdateAsUserIdentityVerified(passwordUpda
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE password_update SET user_identity_verified = 1 WHERE id = ?", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE password_update SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{passwordUpdateId},
 	})
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -234,7 +234,7 @@ func (server *serverStruct) completePasswordUpdate(passwordUpdateId string, newU
 	}
 
 	userIds := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET password_hash = ?, password_salt = ? FROM session JOIN password_update ON password_update.session_id = session.id WHERE user.id = session.user_id AND password_update.id = ? RETURNING user.id", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET password_hash = ?, password_salt = ? FROM session JOIN password_update ON password_update.session_id = session.id WHERE user.id = session.user_id AND password_update.id = ? AND password_update.user_identity_verified = 1 RETURNING user.id", &sqlitex.ExecOptions{
 		Args: []any{newUserPasswordHash, newUserPasswordSalt, passwordUpdateId},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			userId := stmt.ColumnText(0)
@@ -295,24 +295,14 @@ func (server *serverStruct) deletePasswordUpdate(passwordUpdateId string) error 
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_update WHERE id = ?", &sqlitex.ExecOptions{
 		Args: []any{passwordUpdateId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to delete from password_update table: %s", err.Error())
 	}
-	return nil
-}
-
-func (server *serverStruct) deletePasswordReset(passwordResetId string) error {
-	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to take database write connection: %s", err.Error())
-	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_reset WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{passwordResetId},
-	})
+	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-	if err != nil {
-		return fmt.Errorf("failed to delete from password_reset table: %s", err.Error())
+	if affectedCount < 1 {
+		return errPasswordUpdateNotFound
 	}
 	return nil
 }

@@ -207,12 +207,17 @@ func (server *serverStruct) setAccountDeletionAsUserIdentityVerified(accountDele
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE account_deletion SET user_identity_verified = 1 WHERE id = ?", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE account_deletion SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{accountDeletionId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to update account_deletion table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errAccountDeletionNotFound
 	}
 	return nil
 }
@@ -222,7 +227,7 @@ func (server *serverStruct) completeAccountDeletion(accountDeletionId string) er
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user WHERE id IN (SELECT user.id FROM user INNER JOIN session ON user.id = session.user_id INNER JOIN account_deletion ON session.id = account_deletion.session_id WHERE account_deletion.id = ?)", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user WHERE id IN (SELECT user.id FROM user INNER JOIN session ON user.id = session.user_id INNER JOIN account_deletion ON session.id = account_deletion.session_id WHERE account_deletion.id = ? AND account_deletion.user_identity_verified = 1)", &sqlitex.ExecOptions{
 		Args: []any{accountDeletionId},
 	})
 	if err != nil {
@@ -245,9 +250,14 @@ func (server *serverStruct) deleteAccountDeletion(accountDeletionId string) erro
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM account_deletion WHERE id = ?", &sqlitex.ExecOptions{
 		Args: []any{accountDeletionId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to delete from account_deletion table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errAccountDeletionNotFound
 	}
 	return nil
 }

@@ -199,9 +199,14 @@ func (server *serverStruct) deleteSession(sessionId string) error {
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM session WHERE id = ?", &sqlitex.ExecOptions{
 		Args: []any{sessionId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to delete from session table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errSessionNotFound
 	}
 	return nil
 }

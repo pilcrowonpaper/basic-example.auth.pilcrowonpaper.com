@@ -237,12 +237,17 @@ func (server *serverStruct) setEmailAddressUpdateAsUserIdentityVerified(emailAdd
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update SET user_identity_verified = 1 WHERE id = ?", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{emailAddressUpdateId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to update email_address_update table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errEmailAddressUpdateNotFound
 	}
 	return nil
 }
@@ -254,12 +259,17 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddress(emailAddressUpd
 	if err != nil {
 		return "", fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update SET new_email_address = ?, new_email_address_verification_code = ? WHERE id = ?", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update SET new_email_address = ?, new_email_address_verification_code = ? WHERE id = ? AND new_email_address IS NULL", &sqlitex.ExecOptions{
 		Args: []any{newEmailAddress, newEmailAddressVerificationCode, emailAddressUpdateId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return "", fmt.Errorf("failed to update email_address_update table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return "", errEmailAddressUpdateNotFound
 	}
 	return newEmailAddressVerificationCode, nil
 }
@@ -277,7 +287,7 @@ func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId stri
 	}
 
 	userIds := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET email_address = email_address_update.new_email_address FROM session JOIN email_address_update ON email_address_update.session_id = session.id WHERE user.id = session.user_id AND email_address_update.id = ? RETURNING user.id", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET email_address = email_address_update.new_email_address FROM session JOIN email_address_update ON email_address_update.session_id = session.id WHERE user.id = session.user_id AND email_address_update.id = ? AND email_address_update.user_identity_verified = 1 AND email_address_update.new_email_address IS NOT NULL RETURNING user.id", &sqlitex.ExecOptions{
 		Args: []any{emailAddressUpdateId},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			userId := stmt.ColumnText(0)
@@ -354,9 +364,14 @@ func (server *serverStruct) deleteEmailAddressUpdate(emailAddressUpdateId string
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM email_address_update WHERE id = ?", &sqlitex.ExecOptions{
 		Args: []any{emailAddressUpdateId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to delete from email_address_update table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errEmailAddressUpdateNotFound
 	}
 	return nil
 }

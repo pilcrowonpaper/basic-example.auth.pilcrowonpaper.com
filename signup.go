@@ -206,12 +206,17 @@ func (server *serverStruct) setSignupAsEmailAddressVerified(signupId string) err
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE signup SET email_address_verified = 1 WHERE id = ?", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE signup SET email_address_verified = 1 WHERE id = ? AND email_address_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{signupId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to update signup table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errSignupNotFound
 	}
 	return nil
 }
@@ -235,7 +240,7 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 	}
 
 	emailAddresses := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO user (id, email_address, password_hash, password_salt, created_at) SELECT ?, signup.email_address, ?, ?, ? FROM signup WHERE signup.id = ? RETURNING user.email_address", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO user (id, email_address, password_hash, password_salt, created_at) SELECT ?, signup.email_address, ?, ?, ? FROM signup WHERE signup.id = ? AND signup.email_address_verified = 1 RETURNING user.email_address", &sqlitex.ExecOptions{
 		Args: []any{userId, userPasswordHash, userPasswordSalt, nowSecondPrecision.Unix(), signupId},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			emailAddress := stmt.ColumnText(0)
@@ -311,9 +316,14 @@ func (server *serverStruct) deleteSignup(signupId string) error {
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM signup WHERE id = ?", &sqlitex.ExecOptions{
 		Args: []any{signupId},
 	})
-	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to delete from signup table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if affectedCount < 1 {
+		return errSignupNotFound
 	}
 	return nil
 }
