@@ -27,6 +27,7 @@ type serverStruct struct {
 	emailAddressVerificationRateLimit                     *ratelimit.LimitStruct
 	userPasswordResetOneTimePasswordVerificationRateLimit *ratelimit.LimitStruct
 	emailRateLimit                                        *ratelimit.LimitStruct
+	requestRateLimit                                      *ratelimit.LimitStruct
 }
 
 type serverLoggingStruct struct {
@@ -79,6 +80,7 @@ func createServer(emailClient emailClientInterface, flags serverFlagsStruct, log
 	emailAddressVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
 	userPasswordResetOneTimePasswordVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
 	emailRateLimit := ratelimit.NewLimit(1_000, 3, 30*time.Minute)
+	requestRateLimit := ratelimit.NewLimit(1_000, 100, time.Second)
 
 	server := &serverStruct{
 		emailClient:                         emailClient,
@@ -90,7 +92,8 @@ func createServer(emailClient emailClientInterface, flags serverFlagsStruct, log
 		userPasswordAuthenticationRateLimit: userPasswordAuthenticationRateLimit,
 		emailAddressVerificationRateLimit:   emailAddressVerificationRateLimit,
 		userPasswordResetOneTimePasswordVerificationRateLimit: userPasswordResetOneTimePasswordVerificationRateLimit,
-		emailRateLimit: emailRateLimit,
+		emailRateLimit:   emailRateLimit,
+		requestRateLimit: requestRateLimit,
 	}
 	return server, nil
 }
@@ -99,6 +102,15 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestId := r.Header.Get("X-Railway-Request-Id")
 	if requestId == "" {
 		requestId = generateLongItemId()
+	}
+
+	clientIPAddress := r.Header.Get("CF-Connecting-IP")
+	if clientIPAddress != "" {
+		rateLimitAllowed := server.requestRateLimit.Consume(clientIPAddress)
+		if !rateLimitAllowed {
+			w.WriteHeader(429)
+			return
+		}
 	}
 
 	pathParts := strings.Split(r.URL.Path, "/")[1:]
