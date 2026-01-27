@@ -17,4 +17,4 @@ jobs:
         run: curl -fsSL https://raw.githubusercontent.com/railwayapp/cli/refs/tags/v4.23.0/install.sh | bash
 
       - name: Deploy code to Railway
-        run: railway up --ci --service server
+        run: railway up --ci --service basic-example
