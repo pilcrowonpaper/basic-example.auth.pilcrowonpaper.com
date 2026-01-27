@@ -472,6 +472,9 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="%s" />
+
+	<style>%s</style>
+	<style>%s</style>
 </head>
 
 <body>
@@ -484,8 +487,6 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	</footer>
 </body>
 <script type="module">%s</script>
-<style>%s</style>
-<style>%s</style>
 <script id="data" type="application/json">%s</script>
 </html>`
 
@@ -494,11 +495,11 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 		html.EscapeString(title),
 		html.EscapeString(title),
 		html.EscapeString(title),
+		baseStylesheet,
+		stylesheet,
 		bodyHTML,
 		html.EscapeString(requestId),
 		script,
-		baseStylesheet,
-		stylesheet,
 		dataJSON,
 	)
 
