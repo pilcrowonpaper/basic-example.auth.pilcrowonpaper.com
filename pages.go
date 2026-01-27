@@ -481,7 +481,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 
 <body>
 	<header>
-		<a id="home-link" href="/">basic auth example</a>
+		<a id="home-link" href="/">Basic auth example</a>
 	</header>
 	<main>%s</main>
 	<footer>
@@ -494,7 +494,6 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 
 	pageHTML := fmt.Sprintf(
 		htmlTemplate,
-		html.EscapeString(title),
 		html.EscapeString(title),
 		html.EscapeString(title),
 		baseStylesheet,
