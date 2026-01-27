@@ -463,12 +463,11 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	<meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
 
-	
 	<meta property="og:title" content="%s" />
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="en_US" />
 	<meta property="og:site_name" content="Basic auth example" />
-	<meta property="og:url" content="https://example.com" />
+	<meta property="og:url" content="https://basic-example.auth.pilcrowonpaper.com" />
 
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="%s" />
