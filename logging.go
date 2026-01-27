@@ -16,7 +16,6 @@ func (server *serverStruct) logActionSuccessResult(requestId string, actionName 
 
 	logJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
 	logJSONBuilder.AddString("type", "action_success_result")
-	logJSONBuilder.AddString("level", "info")
 	logJSONBuilder.AddInt64("timestamp", now.Unix())
 	logJSONBuilder.AddString("request_id", requestId)
 	logJSONBuilder.AddJSON("action", actionName)
