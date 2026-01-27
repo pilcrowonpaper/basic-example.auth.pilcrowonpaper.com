@@ -1,0 +1,7 @@
+#sign-in-link {
+	color: var(--link-color);
+	text-decoration: underline;
+	cursor: pointer;
+	display: block;
+	margin-top: 1.5rem;
+}

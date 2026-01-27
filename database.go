@@ -1,0 +1,140 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"os"
+	"slices"
+
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
+)
+
+func setUpDatabase() error {
+	currentSchemaHash := sha256.Sum256([]byte(schemaSQLScript))
+
+	databaseConnection, err := sqlite.OpenConn(databaseFilename, sqlite.OpenCreate, sqlite.OpenReadWrite)
+	if err != nil {
+		return fmt.Errorf("failed to create database file: %s\n", err.Error())
+	}
+
+	err = sqlitex.ExecuteTransient(databaseConnection, "PRAGMA foreign_keys = ON", nil)
+	if err != nil {
+		return fmt.Errorf("failed to enable foreign keys: %s", err.Error())
+	}
+
+	latestSchemaMatch, err := checkLatestSchema(databaseConnection, currentSchemaHash[:])
+	databaseConnection.Close()
+	if err != nil {
+		return fmt.Errorf("failed to check latest schema: %s\n", err.Error())
+	}
+
+	if latestSchemaMatch {
+		return nil
+	}
+
+	// Reset database file
+	databaseFile, err := os.Create(databaseFilename)
+	databaseFile.Close()
+	if err != nil {
+		return fmt.Errorf("failed to open database file: %s\n", err.Error())
+	}
+
+	databaseConnection, err = sqlite.OpenConn(databaseFilename, sqlite.OpenCreate, sqlite.OpenReadWrite)
+	if err != nil {
+		return fmt.Errorf("failed to create database file: %s\n", err.Error())
+	}
+
+	err = sqlitex.Execute(databaseConnection, "BEGIN", nil)
+	if err != nil {
+		databaseConnection.Close()
+		return fmt.Errorf("failed to begin transaction: %s\n", err.Error())
+	}
+
+	err = sqlitex.ExecuteTransient(databaseConnection, "CREATE TABLE _database (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL) STRICT", nil)
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseConnection, "ROLLBACK", nil)
+		databaseConnection.Close()
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return fmt.Errorf("failed to execute schema script: %s", err.Error())
+	}
+
+	err = sqlitex.ExecuteTransient(databaseConnection, "INSERT INTO _database (key, value) VALUES ('schema_hash', ?)", &sqlitex.ExecOptions{
+		Args: []any{base64.StdEncoding.EncodeToString(currentSchemaHash[:])},
+	})
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseConnection, "ROLLBACK", nil)
+		databaseConnection.Close()
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return fmt.Errorf("failed to execute schema script: %s", err.Error())
+	}
+
+	err = sqlitex.ExecuteScript(databaseConnection, schemaSQLScript, nil)
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseConnection, "ROLLBACK", nil)
+		databaseConnection.Close()
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return fmt.Errorf("failed to execute schema script: %s", err.Error())
+	}
+
+	err = sqlitex.Execute(databaseConnection, "COMMIT", nil)
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseConnection, "ROLLBACK", nil)
+		databaseConnection.Close()
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return fmt.Errorf("failed to commit transaction: %s", err.Error())
+	}
+
+	databaseConnection.Close()
+
+	return nil
+}
+
+func checkLatestSchema(databaseConnection *sqlite.Conn, currentSchemaHash []byte) (bool, error) {
+	databaseTableIds := []int{}
+	err := sqlitex.ExecuteTransient(databaseConnection, "SELECT rowid FROM sqlite_schema WHERE type = 'table' AND name = '_database'", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			databaseTableIds = append(databaseTableIds, stmt.ColumnInt(0))
+			return nil
+		},
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to create from sqlite_schema table: %s", err.Error())
+	}
+	if len(databaseTableIds) < 1 {
+		return false, nil
+	}
+
+	schemaHashes := [][]byte{}
+	err = sqlitex.ExecuteTransient(databaseConnection, "SELECT value FROM _database WHERE key = 'schema_hash'", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			encodedSchemaHash := stmt.ColumnText(0)
+			schemaHash, err := base64.StdEncoding.DecodeString(encodedSchemaHash)
+			if err != nil {
+				return fmt.Errorf("failed to decode schema hash: %s", err.Error())
+			}
+			schemaHashes = append(schemaHashes, schemaHash)
+			return nil
+		},
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to create from _db table: %s", err.Error())
+	}
+	if len(schemaHashes) < 1 {
+		return false, nil
+	}
+	latestSchemaHash := schemaHashes[0]
+
+	schemaHashMatch := slices.Compare(currentSchemaHash, latestSchemaHash) == 0
+
+	return schemaHashMatch, nil
+}
