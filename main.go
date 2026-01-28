@@ -55,7 +55,6 @@ func main() {
 	}
 
 	var emailClient emailClientInterface
-	fmt.Println(awsSESEnvValue)
 	if awsSESEnvValue == "1" {
 		staticProvider := credentials.NewStaticCredentialsProvider(awsAccessKeyEnvValue, awsSecretAccessKeyEnvValue, "")
 
