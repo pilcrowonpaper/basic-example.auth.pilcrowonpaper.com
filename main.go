@@ -140,7 +140,7 @@ func main() {
 
 			logJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
 			logJSONBuilder.AddString("type", "memory_usage")
-			logJSONBuilder.AddString("allocated", fmt.Sprintf("Alloc = %.3f MiB\n", float64(stats.Alloc)/1024/1024))
+			logJSONBuilder.AddJSON("allocated", fmt.Sprintf("%.3f", float64(stats.Alloc)/1024/1024))
 			logJSONBuilder.AddInt64("timestamp", now.Unix())
 			logJSON := logJSONBuilder.Done()
 
