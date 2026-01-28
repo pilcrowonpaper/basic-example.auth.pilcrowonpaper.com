@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ func (server *serverStruct) hashUserPassword(password string, salt []byte) []byt
 	server.cpuIntensiveSemaphore.Acquire(context.Background(), 1)
 	passwordHash := argon2.IDKey([]byte(password), salt, 1, 64*1024, 3, 32)
 	server.cpuIntensiveSemaphore.Release(1)
+	runtime.GC()
 	return passwordHash
 }
 
