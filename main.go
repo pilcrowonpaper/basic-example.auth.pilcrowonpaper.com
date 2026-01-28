@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"strings"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
-	"github.com/pilcrowonpaper/go-json"
 )
 
 const databaseFilename = "main.db"
@@ -128,25 +126,6 @@ func main() {
 			server.emailRateLimit.Clear()
 
 			server.logBackgroundJobRunCompletion(runId)
-		}
-	}()
-
-	go func() {
-		for {
-			now := time.Now()
-
-			var stats runtime.MemStats
-			runtime.ReadMemStats(&stats)
-
-			logJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
-			logJSONBuilder.AddString("type", "memory_usage")
-			logJSONBuilder.AddJSON("allocated", fmt.Sprintf("%.3f", float64(stats.Alloc)/1024/1024))
-			logJSONBuilder.AddInt64("timestamp", now.Unix())
-			logJSON := logJSONBuilder.Done()
-
-			fmt.Println(logJSON)
-
-			time.Sleep(time.Minute)
 		}
 	}()
 
