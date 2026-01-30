@@ -496,7 +496,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	</header>
 	<main>%s</main>
 	<footer>
-		<p>Created by <a href="https://pilcrowonpaper.com">Pilcrow</a></p>
+		<p>Created by <a href="https://pilcrowonpaper.com">pilcrow</a></p>
 		<p>Questions and support: <a href="mailto:examples@auth.pilcrowonpaper.com">examples@auth.pilcrowonpaper.com</a></p>
 		<p>Request ID: %s</p>
 	</footer>
