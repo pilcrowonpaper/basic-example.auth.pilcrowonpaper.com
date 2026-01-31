@@ -411,7 +411,7 @@ func createResetPasswordVerifyCodePageHTML(requestId string, passwordResetToken 
 	title := "Verify password reset code | Basic auth example"
 
 	bodyHTMLTemplate := `<h1>Verify password reset code</h1>
-<p>We sent a 16-digit code to %s. Check your spam or junk folder if you don't see it.</p>
+<p>We sent a 16-digit code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
 <form id="verify-code-form">
 	<label for="verify-code-form-code-input">Password reset code (hyphens and spaces are optional)</label>
 	<input id="verify-code-form-code-input" name="code" autocomplete="none" required />
