@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -137,4 +139,55 @@ func checkLatestSchema(databaseConnection *sqlite.Conn, currentSchemaHash []byte
 	schemaHashMatch := slices.Compare(currentSchemaHash, latestSchemaHash) == 0
 
 	return schemaHashMatch, nil
+}
+
+func (server *serverStruct) cleanDatabase() error {
+	now := time.Now()
+	signupCreationThreshold := now.Add(20 * time.Minute * -1)
+
+	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to take database write connection: %s", err.Error())
+	}
+
+	err = sqlitex.Execute(databaseWriteConnection, "BEGIN IMMEDIATE", nil)
+	if err != nil {
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		return fmt.Errorf("failed to begin transaction: %s", err.Error())
+	}
+
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user", nil)
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return fmt.Errorf("failed to delete from user table: %s", err.Error())
+	}
+
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM signup WHERE created_at <= ?", &sqlitex.ExecOptions{
+		Args: []any{signupCreationThreshold.Unix()},
+	})
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return fmt.Errorf("failed to delete from signup table: %s", err.Error())
+	}
+
+	err = sqlitex.Execute(databaseWriteConnection, "COMMIT", nil)
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to commit transaction: %s", rollbackErr.Error())
+		}
+	}
+
+	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+
+	return nil
 }

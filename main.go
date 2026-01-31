@@ -115,9 +115,9 @@ func main() {
 			runId := generateLongItemId()
 			server.logBackgroundJobRun(runId, backgroundJob)
 
-			err := server.deleteAllUsers()
+			err := server.cleanDatabase()
 			if err != nil {
-				errorMessage := fmt.Sprintf("failed to delete all users: %s", err.Error())
+				errorMessage := fmt.Sprintf("failed to clean database: %s", err.Error())
 				server.logBackgroundJobError(runId, errorMessage)
 			}
 
