@@ -253,7 +253,7 @@ func (server *serverStruct) setEmailAddressUpdateAsUserIdentityVerified(emailAdd
 }
 
 func (server *serverStruct) setEmailAddressUpdateNewEmailAddress(emailAddressUpdateId string, newEmailAddress string) (string, error) {
-	newEmailAddressVerificationCode := generateEmailVerificationCode()
+	newEmailAddressVerificationCode := generateEmailAddressVerificationCode()
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {

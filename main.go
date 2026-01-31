@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base32"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"log"
@@ -151,19 +152,6 @@ func generateLongItemId() string {
 	return verificationCode
 }
 
-func generateEmailVerificationCode() string {
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-
-	sourceBytes := make([]byte, 8)
-	rand.Read(sourceBytes)
-
-	stringBytes := make([]byte, 8)
-	for i, sourceByte := range sourceBytes {
-		stringBytes[i] = alphabet[sourceByte>>3]
-	}
-	return string(stringBytes)
-}
-
 func generateOneTimePassword() string {
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -175,6 +163,27 @@ func generateOneTimePassword() string {
 		stringBytes[i] = alphabet[sourceByte>>3]
 	}
 	return string(stringBytes)
+}
+
+func generateEmailAddressVerificationCode() string {
+	for {
+		randomBytes := make([]byte, 4)
+		rand.Read(randomBytes)
+		randomUint := binary.BigEndian.Uint32(randomBytes)
+		randomUint >>= 5
+		if randomUint < 100_000_000 {
+			stringBytes := make([]byte, 8)
+			stringBytes[0] = byte((randomUint/10_000_000)%10 + '0')
+			stringBytes[1] = byte((randomUint/1_000_000)%10 + '0')
+			stringBytes[2] = byte((randomUint/100_000)%10 + '0')
+			stringBytes[3] = byte((randomUint/10_000)%10 + '0')
+			stringBytes[4] = byte((randomUint/1_000)%10 + '0')
+			stringBytes[5] = byte((randomUint/100)%10 + '0')
+			stringBytes[6] = byte((randomUint/10)%10 + '0')
+			stringBytes[7] = byte((randomUint)%10 + '0')
+			return string(stringBytes)
+		}
+	}
 }
 
 func parseNonNegativeIntegerString(s string) (int, error) {

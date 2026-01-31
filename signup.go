@@ -77,7 +77,7 @@ func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []b
 	secret := generateSignupSecret()
 	secretHash := hashSignupSecret(secret)
 
-	emailAddressVerificationCode := generateEmailVerificationCode()
+	emailAddressVerificationCode := generateEmailAddressVerificationCode()
 
 	signup := signupStruct{
 		id:                           id,
