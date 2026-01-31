@@ -159,6 +159,30 @@ func generateOneTimePassword() string {
 	return verificationCode
 }
 
+func formatOneTimePassword(oneTimePassword string) string {
+	stringBytes := make([]byte, 19)
+	stringBytes[0] = oneTimePassword[0]
+	stringBytes[1] = oneTimePassword[1]
+	stringBytes[2] = oneTimePassword[2]
+	stringBytes[3] = oneTimePassword[3]
+	stringBytes[4] = '-'
+	stringBytes[5] = oneTimePassword[4]
+	stringBytes[6] = oneTimePassword[5]
+	stringBytes[7] = oneTimePassword[6]
+	stringBytes[8] = oneTimePassword[7]
+	stringBytes[9] = '-'
+	stringBytes[10] = oneTimePassword[8]
+	stringBytes[11] = oneTimePassword[9]
+	stringBytes[12] = oneTimePassword[10]
+	stringBytes[13] = oneTimePassword[11]
+	stringBytes[14] = '-'
+	stringBytes[15] = oneTimePassword[12]
+	stringBytes[16] = oneTimePassword[13]
+	stringBytes[17] = oneTimePassword[14]
+	stringBytes[18] = oneTimePassword[15]
+	return string(stringBytes)
+}
+
 func generateEmailAddressVerificationCode() string {
 	for {
 		randomBytes := make([]byte, 4)
@@ -178,6 +202,20 @@ func generateEmailAddressVerificationCode() string {
 			return string(stringBytes)
 		}
 	}
+}
+
+func formatEmailAddressVerificationCode(verificationCode string) string {
+	stringBytes := make([]byte, 9)
+	stringBytes[0] = verificationCode[0]
+	stringBytes[1] = verificationCode[1]
+	stringBytes[2] = verificationCode[2]
+	stringBytes[3] = verificationCode[3]
+	stringBytes[4] = '-'
+	stringBytes[5] = verificationCode[4]
+	stringBytes[6] = verificationCode[5]
+	stringBytes[7] = verificationCode[6]
+	stringBytes[8] = verificationCode[7]
+	return string(stringBytes)
 }
 
 func parseNonNegativeIntegerString(s string) (int, error) {

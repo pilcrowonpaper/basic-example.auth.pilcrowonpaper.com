@@ -107,7 +107,7 @@ func createSignUpVerifyEmailAddressPageHTML(requestId string, signupToken string
 	bodyHTMLTemplate := `<h1>Verify your email address</h1>
 <p>We sent an 8-digit verification code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
 <form id="verify-verification-code-form">
-	<label for="verify-verification-code-form-verification-code-input">Verification code</label>
+	<label for="verify-verification-code-form-verification-code-input">Verification code (hyphens and spaces are optional)</label>
 	<input id="verify-verification-code-form-verification-code-input" name="verification_code" required />
 	<button id="verify-verification-code-form-submit-button">Verify email address</button>
 </form>
@@ -303,7 +303,7 @@ func createUpdateEmailAddressVerifyNewEmailAddressPageHTML(requestId string, ses
 	bodyHTMLTemplate := `<h1>Verify your new email address</h1>
 <p>We sent an 8-digit verification code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
 <form id="verify-verification-code-form">
-	<label for="verify-verification-code-form-verification-code-input">Verification code</label>
+	<label for="verify-verification-code-form-verification-code-input">Verification code (hyphens and spaces are optional)</label>
 	<input id="verify-verification-code-form-verification-code-input" name="verification_code" required />
 	<button id="verify-verification-code-form-submit-button">Update email address</button>
 </form>
@@ -407,7 +407,7 @@ func createResetPasswordVerifyOneTimePasswordPageHTML(requestId string, password
 	bodyHTMLTemplate := `<h1>Verify one-time password</h1>
 <p>We sent an 8-digit one-time password to %s. Check your spam or junk folder if you don't see it.</p>
 <form id="verify-one-time-password-form">
-	<label for="verify-one-time-password-form-one-time-password-input">One time password</label>
+	<label for="verify-one-time-password-form-one-time-password-input">One time password (hyphens and spaces are optional)</label>
 	<input id="verify-one-time-password-form-one-time-password-input" name="one_time_password" autocomplete="none" required />
 	<button id="verify-one-time-password-form-submit-button">Continue</button>
 </form>

@@ -15,7 +15,8 @@ document.getElementById("verify-verification-code-form").addEventListener("submi
 	submitButtonElement.disabled = true;
 
 	const formData = new FormData(event.target);
-	const verificationCode = formData.get("verification_code");
+	const verificationCodeInputValue = formData.get("verification_code");
+	const verificationCode = verificationCodeInputValue.replaceAll(" ", "").replaceAll("-", "");
 
 	const actionValuesJSONObject = {
 		signup_token: signupToken,

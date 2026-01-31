@@ -15,7 +15,8 @@ document.getElementById("verify-one-time-password-form").addEventListener("submi
 	submitButtonElement.disabled = true;
 
 	const formData = new FormData(event.target);
-	const oneTimePassword = formData.get("one_time_password");
+	const oneTimePasswordInputValue = formData.get("one_time_password");
+	const oneTimePassword = oneTimePasswordInputValue.replaceAll(" ", "").replaceAll("-", "").toUpperCase();
 
 	const actionValuesJSONObject = {
 		password_reset_token: passwordResetToken,

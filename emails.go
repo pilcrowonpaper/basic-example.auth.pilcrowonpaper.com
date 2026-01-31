@@ -5,13 +5,15 @@ import (
 )
 
 func (server *serverStruct) sendSignupEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
+	formattedEmailAddressVerificationCode := formatEmailAddressVerificationCode(emailAddressVerificationCode)
+
 	subject := "Verify your email address"
 	bodyTemplate := `Your email address verification code is: %s
 
 Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
-	body := fmt.Sprintf(bodyTemplate, emailAddressVerificationCode)
+	body := fmt.Sprintf(bodyTemplate, formattedEmailAddressVerificationCode)
 
 	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
@@ -21,13 +23,15 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 }
 
 func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
+	formattedEmailAddressVerificationCode := formatEmailAddressVerificationCode(emailAddressVerificationCode)
+
 	subject := "Verify your new email address"
 	bodyTemplate := `Your email address verification code is: %s
 
 Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
-	body := fmt.Sprintf(bodyTemplate, emailAddressVerificationCode)
+	body := fmt.Sprintf(bodyTemplate, formattedEmailAddressVerificationCode)
 
 	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
@@ -37,13 +41,15 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 }
 
 func (server *serverStruct) sendPasswordResetOneTimePasswordEmail(emailAddress string, oneTimePassword string) error {
+	formattedOneTimePassword := formatOneTimePassword(oneTimePassword)
+
 	subject := "Verify your identity"
 	bodyTemplate := `Your password reset one-time password is: %s
 
 Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
-	body := fmt.Sprintf(bodyTemplate, oneTimePassword)
+	body := fmt.Sprintf(bodyTemplate, formattedOneTimePassword)
 
 	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
