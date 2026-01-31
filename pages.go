@@ -15,7 +15,7 @@ var homePageStylesheet string
 func createHomePageHTML(requestId string) string {
 	title := "Basic auth example"
 	bodyHTML := `<h1>Basic auth example</h1>
-<p>This is a website that implements basic email address and password auth using best practices. It supports email address verification, password update, email address update, password reset, and account deletion. All accounts are automatically deleted at midnight (UTC).</p>
+<p>This an example website that implements email address and password authentication following best practices. All accounts are automatically deleted at midnight (UTC).</p>
 <div id="auth">
 	<a href="/sign-in">Sign in</a>
 	<a href="/sign-up">Create an account</a>
@@ -470,7 +470,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	htmlTemplate := `<html lang="en">
 <head>
 	<title>%s</title>
-	<meta name="description" content="A basic email address and password auth example." />
+	<meta name="description" content="An example website that implements email address and password authentication following best practices." />
 
 	<meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
@@ -479,7 +479,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="en_US" />
 	<meta property="og:site_name" content="Basic auth example" />
-	<meta property="og:description" content="A basic email address and password auth example." />
+	<meta property="og:description" content="An example website that implements email address and password authentication following best practices." />
 	<meta property="og:url" content="https://basic-example.auth.pilcrowonpaper.com" />
 	<meta property="og:image" content="https://pilcrowonpaper.com/profile.jpg" />
 
