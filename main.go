@@ -153,16 +153,10 @@ func generateLongItemId() string {
 }
 
 func generateOneTimePassword() string {
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-
-	sourceBytes := make([]byte, 12)
-	rand.Read(sourceBytes)
-
-	stringBytes := make([]byte, 12)
-	for i, sourceByte := range sourceBytes {
-		stringBytes[i] = alphabet[sourceByte>>3]
-	}
-	return string(stringBytes)
+	idBytes := make([]byte, 10)
+	rand.Read(idBytes)
+	verificationCode := base32.NewEncoding("ABCDEFGHJKLMNPQRSTUVWXYZ23456789").EncodeToString(idBytes)
+	return verificationCode
 }
 
 func generateEmailAddressVerificationCode() string {
