@@ -152,7 +152,7 @@ func generateLongItemId() string {
 	return verificationCode
 }
 
-func generateCode() string {
+func generatePasswordResetCode() string {
 	idBytes := make([]byte, 10)
 	rand.Read(idBytes)
 	verificationCode := base32.NewEncoding("ABCDEFGHJKLMNPQRSTUVWXYZ23456789").EncodeToString(idBytes)

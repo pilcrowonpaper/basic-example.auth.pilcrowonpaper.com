@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/argon2"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
@@ -21,7 +20,6 @@ type passwordResetStruct struct {
 	userId              string
 	secretHash          []byte
 	codeHash            []byte
-	codeSalt            []byte
 	firstFactorVerified bool
 	createdAt           time.Time
 }
@@ -32,21 +30,25 @@ func (passwordReset *passwordResetStruct) compareSecretAgainstHash(secret []byte
 	return hashEqual
 }
 
+func (passwordReset *passwordResetStruct) compareCodeAgainstHash(code string) bool {
+	hashed := hashPasswordResetCode(code)
+	hashEqual := constantTimeCompare(hashed, passwordReset.codeHash)
+	return hashEqual
+}
+
 func generatePasswordResetSecret() []byte {
 	secretBytes := make([]byte, 32)
 	rand.Read(secretBytes)
 	return secretBytes
 }
 
-func (server *serverStruct) hashPasswordResetCode(code string, salt []byte) []byte {
-	server.cpuIntensiveSemaphore.Acquire(context.Background(), 1)
-	codeHash := argon2.IDKey([]byte(code), salt, 1, 16*1024, 3, 32)
-	server.cpuIntensiveSemaphore.Release(1)
-	return codeHash
-}
-
 func hashPasswordResetSecret(secret []byte) []byte {
 	secretHash := sha256.Sum256(secret)
+	return secretHash[:]
+}
+
+func hashPasswordResetCode(code string) []byte {
+	secretHash := sha256.Sum256([]byte(code))
 	return secretHash[:]
 }
 
@@ -80,16 +82,14 @@ func (server *serverStruct) createPasswordReset(userId string) (passwordResetStr
 	secret := generatePasswordResetSecret()
 	secretHash := hashPasswordResetSecret(secret)
 
-	code := generateCode()
-	codeSalt := generateHashingSalt()
-	codeHash := server.hashPasswordResetCode(code, codeSalt)
+	code := generatePasswordResetCode()
+	codeHash := hashPasswordResetCode(code)
 
 	passwordReset := passwordResetStruct{
 		id:                  id,
 		userId:              userId,
 		secretHash:          secretHash,
 		codeHash:            codeHash,
-		codeSalt:            codeSalt,
 		firstFactorVerified: false,
 		createdAt:           nowSecondPrecision,
 	}
@@ -100,14 +100,13 @@ func (server *serverStruct) createPasswordReset(userId string) (passwordResetStr
 	}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		"INSERT INTO password_reset (id, user_id, secret_hash, code_hash, code_salt, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO password_reset (id, user_id, secret_hash, code_hash, created_at) VALUES (?, ?, ?, ?, ?)",
 		&sqlitex.ExecOptions{
 			Args: []any{
 				passwordReset.id,
 				passwordReset.userId,
 				passwordReset.secretHash,
 				passwordReset.codeHash,
-				passwordReset.codeSalt,
 				passwordReset.createdAt.Unix(),
 			},
 		},
@@ -129,7 +128,7 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 	}
 	err = sqlitex.Execute(
 		databaseReadConnection,
-		"SELECT user_id, secret_hash, code_hash, code_salt, first_factor_verified, created_at FROM password_reset WHERE id = ?",
+		"SELECT user_id, secret_hash, code_hash, first_factor_verified, created_at FROM password_reset WHERE id = ?",
 		&sqlitex.ExecOptions{
 			Args: []any{passwordResetId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -139,17 +138,14 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 				stmt.ColumnBytes(1, secretHash)
 				codeHash := make([]byte, 32)
 				stmt.ColumnBytes(2, codeHash)
-				codeSalt := make([]byte, 32)
-				stmt.ColumnBytes(3, codeSalt)
-				firstFactorVerified := stmt.ColumnBool(4)
-				createdAt := time.Unix(stmt.ColumnInt64(5), 0)
+				firstFactorVerified := stmt.ColumnBool(3)
+				createdAt := time.Unix(stmt.ColumnInt64(4), 0)
 
 				passwordReset := passwordResetStruct{
 					id:                  passwordResetId,
 					userId:              userId,
 					secretHash:          secretHash,
 					codeHash:            codeHash,
-					codeSalt:            codeSalt,
 					firstFactorVerified: firstFactorVerified,
 					createdAt:           createdAt,
 				}

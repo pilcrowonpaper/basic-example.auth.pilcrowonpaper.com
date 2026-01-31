@@ -1283,8 +1283,7 @@ func (server *serverStruct) verifyPasswordResetCode(requestId string, passwordRe
 		return errorCodeRateLimited
 	}
 
-	verificationCodeHash := server.hashPasswordResetCode(code, passwordReset.codeSalt)
-	verificationCodeCorrect := constantTimeCompare(verificationCodeHash, passwordReset.codeHash)
+	verificationCodeCorrect := passwordReset.compareCodeAgainstHash(code)
 	if !verificationCodeCorrect {
 		server.logPasswordResetCodeVerificationFailedActionEvent(requestId, passwordReset.id)
 		return errorCodeIncorrectCode
