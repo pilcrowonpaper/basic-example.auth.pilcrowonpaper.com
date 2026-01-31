@@ -127,7 +127,7 @@ resendVerificationCodeButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	alert("We've sent another verification email to your inbox.");
+	alert("We've sent another email to your inbox.");
 	resendVerificationCodeButtonElement.disabled = false;
 });
 
