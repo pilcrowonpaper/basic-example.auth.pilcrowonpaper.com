@@ -920,7 +920,23 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 		return
 	}
 
-	pageHTML := createUpdatePasswordVerifyPasswordPageHTML(requestId, sessionToken, passwordUpdateToken)
+	user, err := server.getUser(session.userId)
+	if errors.Is(err, errUserNotFound) {
+		server.setBlankSessionTokenCookie(w)
+		server.setBlankPasswordUpdateTokenCookie(w)
+		w.Header().Set("Location", "/sign-in")
+		w.WriteHeader(303)
+		return
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
+		server.logActionError(requestId, errorMessage)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
+		return
+	}
+
+	pageHTML := createUpdatePasswordVerifyPasswordPageHTML(requestId, sessionToken, passwordUpdateToken, user)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
@@ -1018,7 +1034,23 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 		return
 	}
 
-	pageHTML := createUpdateEmailAddressVerifyPasswordPageHTML(requestId, sessionToken, emailAddressUpdateToken)
+	user, err := server.getUser(session.userId)
+	if errors.Is(err, errUserNotFound) {
+		server.setBlankSessionTokenCookie(w)
+		server.setBlankEmailAddressUpdateTokenCookie(w)
+		w.Header().Set("Location", "/sign-in")
+		w.WriteHeader(303)
+		return
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
+		server.logActionError(requestId, errorMessage)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
+		return
+	}
+
+	pageHTML := createUpdateEmailAddressVerifyPasswordPageHTML(requestId, sessionToken, emailAddressUpdateToken, user)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
@@ -1184,7 +1216,23 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 		return
 	}
 
-	pageHTML := createDeleteAccountVerifyPasswordPageHTML(requestId, sessionToken, accountDeletionToken)
+	user, err := server.getUser(session.userId)
+	if errors.Is(err, errUserNotFound) {
+		server.setBlankSessionTokenCookie(w)
+		server.setBlankAccountDeletionTokenCookie(w)
+		w.Header().Set("Location", "/sign-in")
+		w.WriteHeader(303)
+		return
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
+		server.logActionError(requestId, errorMessage)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
+		return
+	}
+
+	pageHTML := createDeleteAccountVerifyPasswordPageHTML(requestId, sessionToken, accountDeletionToken, user)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }

@@ -188,16 +188,18 @@ var updatePasswordVerifyPasswordPageScript string
 //go:embed assets/update_password_verify_password.css
 var updatePasswordVerifyPasswordPageStylesheet string
 
-func createUpdatePasswordVerifyPasswordPageHTML(requestId string, sessionToken string, passwordUpdateToken string) string {
+func createUpdatePasswordVerifyPasswordPageHTML(requestId string, sessionToken string, passwordUpdateToken string, user userStruct) string {
 	title := "Verify your password | Basic auth example"
 
-	bodyHTML := `<h1>Verify your password</h1>
+	bodyHTMLTemplate := `<h1>Verify your password</h1>
 <form id="verify-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
 	<label for="verify-password-form-password-input">Password</label>
 	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
 	<button id="verify-password-form-submit-button">Continue</button>
 </form>
 <button id="cancel-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("session_token", sessionToken)
@@ -243,16 +245,18 @@ var updateEmailAddressVerifyPasswordPageScript string
 //go:embed assets/update_email_address_verify_password.css
 var updateEmailAddressVerifyPasswordPageStylesheet string
 
-func createUpdateEmailAddressVerifyPasswordPageHTML(requestId string, sessionToken string, emailAddressUpdateToken string) string {
+func createUpdateEmailAddressVerifyPasswordPageHTML(requestId string, sessionToken string, emailAddressUpdateToken string, user userStruct) string {
 	title := "Verify your password | Basic auth example"
 
-	bodyHTML := `<h1>Verify your password</h1>
+	bodyHTMLTemplate := `<h1>Verify your password</h1>
 <form id="verify-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
 	<label for="verify-password-form-password-input">Password</label>
 	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
 	<button id="verify-password-form-submit-button">Continue</button>
 </form>
 <button id="cancel-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("session_token", sessionToken)
@@ -329,16 +333,18 @@ var deleteAccountVerifyPasswordPageScript string
 //go:embed assets/delete_account_verify_password.css
 var deleteAccountVerifyPasswordPageStylesheet string
 
-func createDeleteAccountVerifyPasswordPageHTML(requestId string, sessionToken string, accountDeletionToken string) string {
+func createDeleteAccountVerifyPasswordPageHTML(requestId string, sessionToken string, accountDeletionToken string, user userStruct) string {
 	title := "Verify your password | Basic auth example"
 
-	bodyHTML := `<h1>Verify your password</h1>
+	bodyHTMLTemplate := `<h1>Verify your password</h1>
 <form id="verify-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
 	<label for="verify-password-form-password-input">Password</label>
 	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
 	<button id="verify-password-form-submit-button">Continue</button>
 </form>
 <button id="cancel-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("session_token", sessionToken)
