@@ -58,7 +58,7 @@ func main() {
 	if awsSESEnvValue == "1" {
 		staticProvider := credentials.NewStaticCredentialsProvider(awsAccessKeyEnvValue, awsSecretAccessKeyEnvValue, "")
 
-		cfg, err := config.LoadDefaultConfig(context.TODO(),
+		cfg, err := config.LoadDefaultConfig(context.Background(),
 			config.WithRegion(awsRegionEnvValue),
 			config.WithCredentialsProvider(staticProvider),
 		)

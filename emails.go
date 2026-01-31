@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 )
 
@@ -14,7 +13,7 @@ Do not share this code with anyone. If you didn't request this, you can safely i
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 	body := fmt.Sprintf(bodyTemplate, emailAddressVerificationCode)
 
-	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}
@@ -30,7 +29,7 @@ Do not share this code with anyone. If you didn't request this, you can safely i
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 	body := fmt.Sprintf(bodyTemplate, emailAddressVerificationCode)
 
-	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}
@@ -46,7 +45,7 @@ Do not share this code with anyone. If you didn't request this, you can safely i
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 	body := fmt.Sprintf(bodyTemplate, oneTimePassword)
 
-	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}
@@ -59,7 +58,7 @@ func (server *serverStruct) sendSignedInEmail(emailAddress string) error {
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 
-	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}
@@ -72,7 +71,7 @@ func (server *serverStruct) sendEmailAddressUpdatedEmail(emailAddress string) er
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 
-	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}
@@ -85,7 +84,7 @@ func (server *serverStruct) sendPasswordUpdatedEmail(emailAddress string) error 
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 
-	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}

@@ -22,7 +22,7 @@ func newAWSSESEmailClient(sesClient *sesv2.Client, emailAddress string) *awsSESE
 	return awsSESEmailClient
 }
 
-func (awsSESEmailClient *awsSESEmailClientStruct) sendEmail(ctx context.Context, toEmailAddress string, subject string, body string) error {
+func (awsSESEmailClient *awsSESEmailClientStruct) sendEmail(toEmailAddress string, subject string, body string) error {
 	input := &sesv2.SendEmailInput{
 		FromEmailAddress: aws.String(awsSESEmailClient.emailAddress),
 		Destination: &types.Destination{
@@ -42,7 +42,7 @@ func (awsSESEmailClient *awsSESEmailClientStruct) sendEmail(ctx context.Context,
 		},
 	}
 
-	_, err := awsSESEmailClient.sesClient.SendEmail(ctx, input)
+	_, err := awsSESEmailClient.sesClient.SendEmail(context.Background(), input)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %s", err.Error())
 	}
