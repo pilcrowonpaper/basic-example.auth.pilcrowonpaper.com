@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
+	"runtime/debug"
 	"server/ratelimit"
 	"strings"
 	"time"
@@ -99,6 +101,17 @@ func createServer(emailClient emailClientInterface, flags serverFlagsStruct, log
 }
 
 func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			// Just kill the server if it panics
+
+			stack := debug.Stack()
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			fmt.Fprintf(os.Stderr, "%s\n", stack)
+			os.Exit(1)
+		}
+	}()
+
 	requestId := r.Header.Get("X-Railway-Request-Id")
 	if requestId == "" {
 		requestId = generateLongItemId()
