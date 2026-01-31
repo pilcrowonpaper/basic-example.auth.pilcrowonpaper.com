@@ -20,8 +20,8 @@ type passwordResetStruct struct {
 	id                  string
 	userId              string
 	secretHash          []byte
-	oneTimePasswordHash []byte
-	oneTimePasswordSalt []byte
+	codeHash            []byte
+	codeSalt            []byte
 	firstFactorVerified bool
 	createdAt           time.Time
 }
@@ -38,11 +38,11 @@ func generatePasswordResetSecret() []byte {
 	return secretBytes
 }
 
-func (server *serverStruct) hashPasswordResetOneTimePassword(oneTimePassword string, salt []byte) []byte {
+func (server *serverStruct) hashPasswordResetCode(code string, salt []byte) []byte {
 	server.cpuIntensiveSemaphore.Acquire(context.Background(), 1)
-	oneTimePasswordHash := argon2.IDKey([]byte(oneTimePassword), salt, 1, 16*1024, 3, 32)
+	codeHash := argon2.IDKey([]byte(code), salt, 1, 16*1024, 3, 32)
 	server.cpuIntensiveSemaphore.Release(1)
-	return oneTimePasswordHash
+	return codeHash
 }
 
 func hashPasswordResetSecret(secret []byte) []byte {
@@ -80,16 +80,16 @@ func (server *serverStruct) createPasswordReset(userId string) (passwordResetStr
 	secret := generatePasswordResetSecret()
 	secretHash := hashPasswordResetSecret(secret)
 
-	oneTimePassword := generateOneTimePassword()
-	oneTimePasswordSalt := generateHashingSalt()
-	oneTimePasswordHash := server.hashPasswordResetOneTimePassword(oneTimePassword, oneTimePasswordSalt)
+	code := generateCode()
+	codeSalt := generateHashingSalt()
+	codeHash := server.hashPasswordResetCode(code, codeSalt)
 
 	passwordReset := passwordResetStruct{
 		id:                  id,
 		userId:              userId,
 		secretHash:          secretHash,
-		oneTimePasswordHash: oneTimePasswordHash,
-		oneTimePasswordSalt: oneTimePasswordSalt,
+		codeHash:            codeHash,
+		codeSalt:            codeSalt,
 		firstFactorVerified: false,
 		createdAt:           nowSecondPrecision,
 	}
@@ -100,14 +100,14 @@ func (server *serverStruct) createPasswordReset(userId string) (passwordResetStr
 	}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		"INSERT INTO password_reset (id, user_id, secret_hash, one_time_password_hash, one_time_password_salt, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO password_reset (id, user_id, secret_hash, code_hash, code_salt, created_at) VALUES (?, ?, ?, ?, ?, ?)",
 		&sqlitex.ExecOptions{
 			Args: []any{
 				passwordReset.id,
 				passwordReset.userId,
 				passwordReset.secretHash,
-				passwordReset.oneTimePasswordHash,
-				passwordReset.oneTimePasswordSalt,
+				passwordReset.codeHash,
+				passwordReset.codeSalt,
 				passwordReset.createdAt.Unix(),
 			},
 		},
@@ -117,7 +117,7 @@ func (server *serverStruct) createPasswordReset(userId string) (passwordResetStr
 		return passwordResetStruct{}, nil, "", fmt.Errorf("failed to insert into password_reset table: %s", err.Error())
 	}
 
-	return passwordReset, secret, oneTimePassword, nil
+	return passwordReset, secret, code, nil
 }
 
 func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordResetStruct, error) {
@@ -129,7 +129,7 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 	}
 	err = sqlitex.Execute(
 		databaseReadConnection,
-		"SELECT user_id, secret_hash, one_time_password_hash, one_time_password_salt, first_factor_verified, created_at FROM password_reset WHERE id = ?",
+		"SELECT user_id, secret_hash, code_hash, code_salt, first_factor_verified, created_at FROM password_reset WHERE id = ?",
 		&sqlitex.ExecOptions{
 			Args: []any{passwordResetId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -137,10 +137,10 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 				userId := stmt.ColumnText(0)
 				secretHash := make([]byte, 32)
 				stmt.ColumnBytes(1, secretHash)
-				oneTimePasswordHash := make([]byte, 32)
-				stmt.ColumnBytes(2, oneTimePasswordHash)
-				oneTimePasswordSalt := make([]byte, 32)
-				stmt.ColumnBytes(3, oneTimePasswordSalt)
+				codeHash := make([]byte, 32)
+				stmt.ColumnBytes(2, codeHash)
+				codeSalt := make([]byte, 32)
+				stmt.ColumnBytes(3, codeSalt)
 				firstFactorVerified := stmt.ColumnBool(4)
 				createdAt := time.Unix(stmt.ColumnInt64(5), 0)
 
@@ -148,8 +148,8 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 					id:                  passwordResetId,
 					userId:              userId,
 					secretHash:          secretHash,
-					oneTimePasswordHash: oneTimePasswordHash,
-					oneTimePasswordSalt: oneTimePasswordSalt,
+					codeHash:            codeHash,
+					codeSalt:            codeSalt,
 					firstFactorVerified: firstFactorVerified,
 					createdAt:           createdAt,
 				}

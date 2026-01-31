@@ -8,22 +8,22 @@ clientStateEventChannel.addEventListener("message", (event) => {
 	}
 });
 
-document.getElementById("verify-one-time-password-form").addEventListener("submit", async (event) => {
+document.getElementById("verify-code-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 
-	const submitButtonElement = document.getElementById("verify-one-time-password-form-submit-button");
+	const submitButtonElement = document.getElementById("verify-code-form-submit-button");
 	submitButtonElement.disabled = true;
 
 	const formData = new FormData(event.target);
-	const oneTimePasswordInputValue = formData.get("one_time_password");
-	const oneTimePassword = oneTimePasswordInputValue.replaceAll(" ", "").replaceAll("-", "").toUpperCase();
+	const codeInputValue = formData.get("code");
+	const code = codeInputValue.replaceAll(" ", "").replaceAll("-", "").toUpperCase();
 
 	const actionValuesJSONObject = {
 		password_reset_token: passwordResetToken,
-		one_time_password: oneTimePassword,
+		code: code,
 	};
 	const requestBodyJSONObject = {
-		action: "verify_password_reset_one_time_password",
+		action: "verify_password_reset_code",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -52,8 +52,8 @@ document.getElementById("verify-one-time-password-form").addEventListener("submi
 				window.location.href = "/reset-password";
 				return;
 			}
-			if (resultJSONObject.error_code === "incorrect_one_time_password") {
-				alert("Incorrect one-time password.");
+			if (resultJSONObject.error_code === "incorrect_code") {
+				alert("Incorrect password reset code.");
 				submitButtonElement.disabled = false;
 				return;
 			}

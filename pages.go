@@ -383,7 +383,7 @@ func createResetPasswordPageHTML(requestId string) string {
 	title := "Reset your password | Basic auth example"
 
 	bodyHTML := `<h1>Reset your password</h1>
-<p>Enter your account's email address and we'll email you a one-time password to reset your password.</p>
+<p>Enter your account's email address and we'll email you a password reset code.</p>
 <form id="reset-password-form">
 	<label for="reset-password-form-email-address-input">Email address</label>
 	<input id="reset-password-form-email-address-input" name="email_address" type="email" autocomplete="username" required />
@@ -395,21 +395,21 @@ func createResetPasswordPageHTML(requestId string) string {
 	return pageHTML
 }
 
-//go:embed assets/reset_password_verify_one_time_password.js
-var resetPasswordVerifyOneTimePasswordPageScript string
+//go:embed assets/reset_password_verify_code.js
+var resetPasswordVerifyCodePageScript string
 
-//go:embed assets/reset_password_verify_one_time_password.css
-var resetPasswordVerifyOneTimePasswordPageStylesheet string
+//go:embed assets/reset_password_verify_code.css
+var resetPasswordVerifyCodePageStylesheet string
 
-func createResetPasswordVerifyOneTimePasswordPageHTML(requestId string, passwordResetToken string, user userStruct) string {
-	title := "Verify one-time password | Basic auth example"
+func createResetPasswordVerifyCodePageHTML(requestId string, passwordResetToken string, user userStruct) string {
+	title := "Verify password reset code | Basic auth example"
 
-	bodyHTMLTemplate := `<h1>Verify one-time password</h1>
-<p>We sent an 8-digit one-time password to %s. Check your spam or junk folder if you don't see it.</p>
-<form id="verify-one-time-password-form">
-	<label for="verify-one-time-password-form-one-time-password-input">One time password (hyphens and spaces are optional)</label>
-	<input id="verify-one-time-password-form-one-time-password-input" name="one_time_password" autocomplete="none" required />
-	<button id="verify-one-time-password-form-submit-button">Continue</button>
+	bodyHTMLTemplate := `<h1>Verify password reset code</h1>
+<p>We sent a 16-digit code to %s. Check your spam or junk folder if you don't see it.</p>
+<form id="verify-code-form">
+	<label for="verify-code-form-code-input">Password reset code (hyphens and spaces are optional)</label>
+	<input id="verify-code-form-code-input" name="code" autocomplete="none" required />
+	<button id="verify-code-form-submit-button">Continue</button>
 </form>
 <button id="cancel-button">Cancel</button>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
@@ -418,7 +418,7 @@ func createResetPasswordVerifyOneTimePasswordPageHTML(requestId string, password
 	dataJSONBuilder.AddString("password_reset_token", passwordResetToken)
 	dataJSON := dataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, title, bodyHTML, resetPasswordVerifyOneTimePasswordPageScript, resetPasswordVerifyOneTimePasswordPageStylesheet, dataJSON)
+	pageHTML := createPageHTML(requestId, title, bodyHTML, resetPasswordVerifyCodePageScript, resetPasswordVerifyCodePageStylesheet, dataJSON)
 
 	return pageHTML
 }
@@ -447,7 +447,7 @@ func createResetPasswordSetNewPasswordPageHTML(requestId string, passwordResetTo
 <p>Use a strong password with at least 10 characters.</p>
 <form id="set-new-password-form">
 	<input name="email_address" autocomplete="username" value="%s" hidden />
-	<label for="set-new-password-form-new-password-input">One time password</label>
+	<label for="set-new-password-form-new-password-input">Code</label>
 	<input id="set-new-password-form-new-password-input" name="new_password" type="password" autocomplete="new-password" required minlength="10" />
 	<button id="set-new-password-form-submit-button">Reset password</button>
 </form>

@@ -23,11 +23,11 @@ type serverStruct struct {
 
 	logging serverLoggingStruct
 
-	userPasswordAuthenticationRateLimit                   *ratelimit.LimitStruct
-	emailAddressVerificationRateLimit                     *ratelimit.LimitStruct
-	userPasswordResetOneTimePasswordVerificationRateLimit *ratelimit.LimitStruct
-	emailRateLimit                                        *ratelimit.LimitStruct
-	requestRateLimit                                      *ratelimit.LimitStruct
+	userPasswordAuthenticationRateLimit        *ratelimit.LimitStruct
+	emailAddressVerificationRateLimit          *ratelimit.LimitStruct
+	userPasswordResetCodeVerificationRateLimit *ratelimit.LimitStruct
+	emailRateLimit                             *ratelimit.LimitStruct
+	requestRateLimit                           *ratelimit.LimitStruct
 }
 
 type serverLoggingStruct struct {
@@ -78,22 +78,22 @@ func createServer(emailClient emailClientInterface, flags serverFlagsStruct, log
 
 	userPasswordAuthenticationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
 	emailAddressVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
-	userPasswordResetOneTimePasswordVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
+	userPasswordResetCodeVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
 	emailRateLimit := ratelimit.NewLimit(1_000, 5, 30*time.Minute)
 	requestRateLimit := ratelimit.NewLimit(1_000, 100, time.Second)
 
 	server := &serverStruct{
-		emailClient:                         emailClient,
-		databaseReadConnectionPool:          databaseReadConnectionPool,
-		databaseWriteConnectionPool:         databaseWriteConnectionPool,
-		cpuIntensiveSemaphore:               cpuIntensiveSemaphore,
-		https:                               flags.https,
-		logging:                             logging,
-		userPasswordAuthenticationRateLimit: userPasswordAuthenticationRateLimit,
-		emailAddressVerificationRateLimit:   emailAddressVerificationRateLimit,
-		userPasswordResetOneTimePasswordVerificationRateLimit: userPasswordResetOneTimePasswordVerificationRateLimit,
-		emailRateLimit:   emailRateLimit,
-		requestRateLimit: requestRateLimit,
+		emailClient:                                emailClient,
+		databaseReadConnectionPool:                 databaseReadConnectionPool,
+		databaseWriteConnectionPool:                databaseWriteConnectionPool,
+		cpuIntensiveSemaphore:                      cpuIntensiveSemaphore,
+		https:                                      flags.https,
+		logging:                                    logging,
+		userPasswordAuthenticationRateLimit:        userPasswordAuthenticationRateLimit,
+		emailAddressVerificationRateLimit:          emailAddressVerificationRateLimit,
+		userPasswordResetCodeVerificationRateLimit: userPasswordResetCodeVerificationRateLimit,
+		emailRateLimit:                             emailRateLimit,
+		requestRateLimit:                           requestRateLimit,
 	}
 	return server, nil
 }
@@ -218,9 +218,9 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// GET /reset-password/verify-one-time-password
-		if len(pathParts) == 2 && pathParts[1] == "verify-one-time-password" && r.Method == "GET" {
-			server.resetPasswordVerifyOneTimePasswordPageRoute(w, r, requestId)
+		// GET /reset-password/verify-code
+		if len(pathParts) == 2 && pathParts[1] == "verify-code" && r.Method == "GET" {
+			server.resetPasswordVerifyCodePageRoute(w, r, requestId)
 			return
 		}
 

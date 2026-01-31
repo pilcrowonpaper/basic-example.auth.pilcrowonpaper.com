@@ -52,8 +52,8 @@ CREATE TABLE password_reset (
     id TEXT NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
     secret_hash BLOB NOT NULL,
-    one_time_password_hash BLOB NOT NULL,
-    one_time_password_salt BLOB NOT NULL,
+    code_hash BLOB NOT NULL,
+    code_salt BLOB NOT NULL,
     first_factor_verified INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL
 ) STRICT;

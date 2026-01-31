@@ -123,7 +123,7 @@ func main() {
 
 			server.userPasswordAuthenticationRateLimit.Clear()
 			server.emailAddressVerificationRateLimit.Clear()
-			server.userPasswordResetOneTimePasswordVerificationRateLimit.Clear()
+			server.userPasswordResetCodeVerificationRateLimit.Clear()
 			server.emailRateLimit.Clear()
 
 			server.logBackgroundJobRunCompletion(runId)
@@ -152,34 +152,34 @@ func generateLongItemId() string {
 	return verificationCode
 }
 
-func generateOneTimePassword() string {
+func generateCode() string {
 	idBytes := make([]byte, 10)
 	rand.Read(idBytes)
 	verificationCode := base32.NewEncoding("ABCDEFGHJKLMNPQRSTUVWXYZ23456789").EncodeToString(idBytes)
 	return verificationCode
 }
 
-func formatOneTimePassword(oneTimePassword string) string {
+func formatCode(code string) string {
 	stringBytes := make([]byte, 19)
-	stringBytes[0] = oneTimePassword[0]
-	stringBytes[1] = oneTimePassword[1]
-	stringBytes[2] = oneTimePassword[2]
-	stringBytes[3] = oneTimePassword[3]
+	stringBytes[0] = code[0]
+	stringBytes[1] = code[1]
+	stringBytes[2] = code[2]
+	stringBytes[3] = code[3]
 	stringBytes[4] = '-'
-	stringBytes[5] = oneTimePassword[4]
-	stringBytes[6] = oneTimePassword[5]
-	stringBytes[7] = oneTimePassword[6]
-	stringBytes[8] = oneTimePassword[7]
+	stringBytes[5] = code[4]
+	stringBytes[6] = code[5]
+	stringBytes[7] = code[6]
+	stringBytes[8] = code[7]
 	stringBytes[9] = '-'
-	stringBytes[10] = oneTimePassword[8]
-	stringBytes[11] = oneTimePassword[9]
-	stringBytes[12] = oneTimePassword[10]
-	stringBytes[13] = oneTimePassword[11]
+	stringBytes[10] = code[8]
+	stringBytes[11] = code[9]
+	stringBytes[12] = code[10]
+	stringBytes[13] = code[11]
 	stringBytes[14] = '-'
-	stringBytes[15] = oneTimePassword[12]
-	stringBytes[16] = oneTimePassword[13]
-	stringBytes[17] = oneTimePassword[14]
-	stringBytes[18] = oneTimePassword[15]
+	stringBytes[15] = code[12]
+	stringBytes[16] = code[13]
+	stringBytes[17] = code[14]
+	stringBytes[18] = code[15]
 	return string(stringBytes)
 }
 

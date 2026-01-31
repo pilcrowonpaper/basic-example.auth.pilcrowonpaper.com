@@ -63,5 +63,5 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 	}
 
 	submitButtonElement.disabled = false;
-	window.location.href = "/reset-password/verify-one-time-password";
+	window.location.href = "/reset-password/verify-code";
 });

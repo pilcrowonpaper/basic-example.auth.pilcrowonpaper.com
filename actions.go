@@ -34,10 +34,10 @@ const (
 	actionVerifyAccountDeletionUserPassword = "verify_account_deletion_user_password"
 	actionConfirmAccountDeletion            = "confirm_account_deletion"
 
-	actionCreatePasswordReset                = "create_password_reset"
-	actionDeletePasswordReset                = "delete_password_reset"
-	actionVerifyPasswordResetOneTimePassword = "verify_password_reset_one_time_password"
-	actionSetPasswordResetNewPassword        = "set_password_reset_new_password"
+	actionCreatePasswordReset         = "create_password_reset"
+	actionDeletePasswordReset         = "delete_password_reset"
+	actionVerifyPasswordResetCode     = "verify_password_reset_code"
+	actionSetPasswordResetNewPassword = "set_password_reset_new_password"
 )
 
 func (server *serverStruct) createSignupAction(requestId string, emailAddress string) (string, string) {
@@ -1215,7 +1215,7 @@ func (server *serverStruct) createPasswordResetAction(requestId string, emailAdd
 
 	server.logPasswordResetCreatedActionEvent(requestId, passwordReset.id, user.id)
 
-	err = server.sendPasswordResetOneTimePasswordEmail(user.emailAddress, passwordResetVerificationCode)
+	err = server.sendPasswordResetCodeEmail(user.emailAddress, passwordResetVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password reset verification email: %s", err.Error())
 		server.logActionError(requestId, errorMessage)
@@ -1255,11 +1255,11 @@ func (server *serverStruct) deletePasswordResetAction(requestId string, password
 	return ""
 }
 
-func (server *serverStruct) verifyPasswordResetOneTimePassword(requestId string, passwordResetToken string, oneTimePassword string) string {
+func (server *serverStruct) verifyPasswordResetCode(requestId string, passwordResetToken string, code string) string {
 	const (
 		errorCodeInvalidPasswordResetToken  = "invalid_password_reset_token"
 		errorCodeFirstFactorAlreadyVerified = "first_factor_already_verified"
-		errorCodeIncorrectOneTimePassword   = "incorrect_one_time_password"
+		errorCodeIncorrectCode              = "incorrect_code"
 		errorCodeRateLimited                = "rate_limited"
 		errorCodeUnexpectedError            = "unexpected_error"
 	)
@@ -1278,19 +1278,19 @@ func (server *serverStruct) verifyPasswordResetOneTimePassword(requestId string,
 		return errorCodeFirstFactorAlreadyVerified
 	}
 
-	rateLimitAllowed := server.userPasswordResetOneTimePasswordVerificationRateLimit.Consume(passwordReset.userId)
+	rateLimitAllowed := server.userPasswordResetCodeVerificationRateLimit.Consume(passwordReset.userId)
 	if !rateLimitAllowed {
 		return errorCodeRateLimited
 	}
 
-	verificationCodeHash := server.hashPasswordResetOneTimePassword(oneTimePassword, passwordReset.oneTimePasswordSalt)
-	verificationCodeCorrect := constantTimeCompare(verificationCodeHash, passwordReset.oneTimePasswordHash)
+	verificationCodeHash := server.hashPasswordResetCode(code, passwordReset.codeSalt)
+	verificationCodeCorrect := constantTimeCompare(verificationCodeHash, passwordReset.codeHash)
 	if !verificationCodeCorrect {
-		server.logPasswordResetOneTimePasswordVerificationFailedActionEvent(requestId, passwordReset.id)
-		return errorCodeIncorrectOneTimePassword
+		server.logPasswordResetCodeVerificationFailedActionEvent(requestId, passwordReset.id)
+		return errorCodeIncorrectCode
 	}
 
-	server.logPasswordResetOneTimePasswordVerificationSucceededActionEvent(requestId, passwordReset.id)
+	server.logPasswordResetCodeVerificationSucceededActionEvent(requestId, passwordReset.id)
 
 	err = server.setPasswordResetAsFirstFactorVerified(passwordReset.id)
 	if err != nil {

@@ -614,24 +614,24 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionVerifyPasswordResetOneTimePassword {
+	if actionName == actionVerifyPasswordResetCode {
 		passwordResetToken, err := values.GetString("password_reset_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		oneTimePassword, err := values.GetString("one_time_password")
+		code, err := values.GetString("code")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyPasswordResetOneTimePassword(requestId, passwordResetToken, oneTimePassword)
+		errorCode := server.verifyPasswordResetCode(requestId, passwordResetToken, code)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifyPasswordResetOneTimePassword, errorCode)
+			server.logActionErrorResult(requestId, actionVerifyPasswordResetCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifyPasswordResetOneTimePassword)
+		server.logActionSuccessResult(requestId, actionVerifyPasswordResetCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -1244,7 +1244,7 @@ func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, _ *htt
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) resetPasswordVerifyOneTimePasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		server.setBlankPasswordResetTokenCookie(w)
@@ -1285,7 +1285,7 @@ func (server *serverStruct) resetPasswordVerifyOneTimePasswordPageRoute(w http.R
 		return
 	}
 
-	pageHTML := createResetPasswordVerifyOneTimePasswordPageHTML(requestId, passwordResetToken, user)
+	pageHTML := createResetPasswordVerifyCodePageHTML(requestId, passwordResetToken, user)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
@@ -1307,12 +1307,12 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	}
 
 	if !passwordReset.firstFactorVerified {
-		w.Header().Set("Location", "/reset-password/verify-one-time-password")
+		w.Header().Set("Location", "/reset-password/verify-code")
 		w.WriteHeader(303)
 		return
 	}
 
-	// See resetPasswordVerifyOneTimePasswordPageRoute()
+	// See resetPasswordVerifyCodePageRoute()
 	user, err := server.getPasswordResetUser(passwordReset.id)
 	if errors.Is(err, errPasswordResetNotFound) {
 		server.setBlankPasswordResetTokenCookie(w)

@@ -7,7 +7,7 @@ import (
 func (server *serverStruct) sendSignupEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
 	formattedEmailAddressVerificationCode := formatEmailAddressVerificationCode(emailAddressVerificationCode)
 
-	subject := "Verify your email address"
+	subject := "Verify your account email address"
 	bodyTemplate := `Your email address verification code is: %s
 
 Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
@@ -25,7 +25,7 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddress string, emailAddressVerificationCode string) error {
 	formattedEmailAddressVerificationCode := formatEmailAddressVerificationCode(emailAddressVerificationCode)
 
-	subject := "Verify your new email address"
+	subject := "Verify your new account email address"
 	bodyTemplate := `Your email address verification code is: %s
 
 Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
@@ -40,16 +40,16 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 	return nil
 }
 
-func (server *serverStruct) sendPasswordResetOneTimePasswordEmail(emailAddress string, oneTimePassword string) error {
-	formattedOneTimePassword := formatOneTimePassword(oneTimePassword)
+func (server *serverStruct) sendPasswordResetCodeEmail(emailAddress string, code string) error {
+	formattedCode := formatCode(code)
 
-	subject := "Verify your identity"
-	bodyTemplate := `Your password reset one-time password is: %s
+	subject := "Reset your account password"
+	bodyTemplate := `Your password reset code is: %s
 
 Do not share this code with anyone. If you didn't request this, you can safely ignore this email.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
-	body := fmt.Sprintf(bodyTemplate, formattedOneTimePassword)
+	body := fmt.Sprintf(bodyTemplate, formattedCode)
 
 	err := server.emailClient.sendEmail(emailAddress, subject, body)
 	if err != nil {

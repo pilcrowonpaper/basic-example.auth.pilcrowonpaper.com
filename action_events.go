@@ -8,29 +8,29 @@ import (
 )
 
 const (
-	actionEventUserPasswordAuthenticationSucceeded               = "user_password_authentication_succeeded"
-	actionEventUserPasswordAuthenticationFailed                  = "user_password_authentication_failed"
-	actionEventEmailAddressVerificationSucceeded                 = "email_address_verification_succeeded"
-	actionEventEmailAddressVerificationFailed                    = "email_address_verification_failed"
-	actionEventPasswordResetOneTimePasswordVerificationSucceeded = "password_reset_one_time_password_verification_succeeded"
-	actionEventPasswordResetOneTimePasswordVerificationFailed    = "password_reset_one_time_password_verification_failed"
-	actionEventSessionCreated                                    = "session_created"
-	actionEventSessionDeleted                                    = "session_deleted"
-	actionEventAllUserSessionsDeleted                            = "all_user_sessions_deleted"
-	actionEventSignupCreated                                     = "signup_created"
-	actionEventSignupDeleted                                     = "signup_deleted"
-	actionEventEmailAddressUpdateCreated                         = "email_address_update_created"
-	actionEventEmailAddressUpdateDeleted                         = "email_address_update_deleted"
-	actionEventPasswordUpdateCreated                             = "password_update_created"
-	actionEventPasswordUpdateDeleted                             = "password_update_deleted"
-	actionEventAccountDeletionCreated                            = "account_deletion_created"
-	actionEventAccountDeletionDeleted                            = "account_deletion_deleted"
-	actionEventPasswordResetCreated                              = "password_reset_created"
-	actionEventPasswordResetDeleted                              = "password_reset_deleted"
-	actionEventUserCreated                                       = "user_created"
-	actionEventUserDeleted                                       = "user_deleted"
-	actionEventUserPasswordUpdated                               = "user_password_updated"
-	actionEventUserEmailAddressUpdated                           = "user_email_address_updated"
+	actionEventUserPasswordAuthenticationSucceeded    = "user_password_authentication_succeeded"
+	actionEventUserPasswordAuthenticationFailed       = "user_password_authentication_failed"
+	actionEventEmailAddressVerificationSucceeded      = "email_address_verification_succeeded"
+	actionEventEmailAddressVerificationFailed         = "email_address_verification_failed"
+	actionEventPasswordResetCodeVerificationSucceeded = "password_reset_code_verification_succeeded"
+	actionEventPasswordResetCodeVerificationFailed    = "password_reset_code_verification_failed"
+	actionEventSessionCreated                         = "session_created"
+	actionEventSessionDeleted                         = "session_deleted"
+	actionEventAllUserSessionsDeleted                 = "all_user_sessions_deleted"
+	actionEventSignupCreated                          = "signup_created"
+	actionEventSignupDeleted                          = "signup_deleted"
+	actionEventEmailAddressUpdateCreated              = "email_address_update_created"
+	actionEventEmailAddressUpdateDeleted              = "email_address_update_deleted"
+	actionEventPasswordUpdateCreated                  = "password_update_created"
+	actionEventPasswordUpdateDeleted                  = "password_update_deleted"
+	actionEventAccountDeletionCreated                 = "account_deletion_created"
+	actionEventAccountDeletionDeleted                 = "account_deletion_deleted"
+	actionEventPasswordResetCreated                   = "password_reset_created"
+	actionEventPasswordResetDeleted                   = "password_reset_deleted"
+	actionEventUserCreated                            = "user_created"
+	actionEventUserDeleted                            = "user_deleted"
+	actionEventUserPasswordUpdated                    = "user_password_updated"
+	actionEventUserEmailAddressUpdated                = "user_email_address_updated"
 )
 
 func (server *serverStruct) logUserPasswordAuthenticationSucceededActionEvent(requestId string, userId string) {
@@ -65,20 +65,20 @@ func (server *serverStruct) logEmailAddressVerificationFailedActionEvent(request
 	server.logActionEvent(actionEventEmailAddressVerificationFailed, requestId, valuesJSON)
 }
 
-func (server *serverStruct) logPasswordResetOneTimePasswordVerificationSucceededActionEvent(requestId string, userId string) {
+func (server *serverStruct) logPasswordResetCodeVerificationSucceededActionEvent(requestId string, userId string) {
 	valuesJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
 	valuesJSONBuilder.AddString("user_id", userId)
 	valuesJSON := valuesJSONBuilder.Done()
 
-	server.logActionEvent(actionEventPasswordResetOneTimePasswordVerificationSucceeded, requestId, valuesJSON)
+	server.logActionEvent(actionEventPasswordResetCodeVerificationSucceeded, requestId, valuesJSON)
 }
 
-func (server *serverStruct) logPasswordResetOneTimePasswordVerificationFailedActionEvent(requestId string, userId string) {
+func (server *serverStruct) logPasswordResetCodeVerificationFailedActionEvent(requestId string, userId string) {
 	valuesJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
 	valuesJSONBuilder.AddString("user_id", userId)
 	valuesJSON := valuesJSONBuilder.Done()
 
-	server.logActionEvent(actionEventPasswordResetOneTimePasswordVerificationFailed, requestId, valuesJSON)
+	server.logActionEvent(actionEventPasswordResetCodeVerificationFailed, requestId, valuesJSON)
 }
 
 func (server *serverStruct) logSessionCreatedActionEvent(requestId string, sessionId string, userId string) {
