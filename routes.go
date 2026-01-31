@@ -1261,7 +1261,6 @@ func (server *serverStruct) resetPasswordVerifyOneTimePasswordPageRoute(w http.R
 	}
 
 	if passwordReset.firstFactorVerified {
-		server.setBlankPasswordResetTokenCookie(w)
 		w.Header().Set("Location", "/reset-password/set-new-password")
 		w.WriteHeader(303)
 		return
@@ -1308,7 +1307,6 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	}
 
 	if !passwordReset.firstFactorVerified {
-		server.setBlankPasswordResetTokenCookie(w)
 		w.Header().Set("Location", "/reset-password/verify-one-time-password")
 		w.WriteHeader(303)
 		return
