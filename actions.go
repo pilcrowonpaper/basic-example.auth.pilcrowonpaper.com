@@ -299,6 +299,13 @@ func (server *serverStruct) signInAction(requestId string, emailAddress string, 
 
 	server.logUserPasswordAuthenticationSucceededActionEvent(requestId, user.id)
 
+	err = server.sendSignedInEmail(emailAddress)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to send signed in email: %s", err.Error())
+		server.logActionError(requestId, errorMessage)
+		return "", errorCodeUnexpectedError
+	}
+
 	session, sessionSecret, err := server.createSession(user.id)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create session: %s", err.Error())

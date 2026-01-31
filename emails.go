@@ -53,6 +53,19 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 	return nil
 }
 
+func (server *serverStruct) sendSignedInEmail(emailAddress string) error {
+	subject := "New sign-in to your account"
+	body := `We detected a recent login to your account. If this wasn't you, please secure your account by resetting your password immediately.
+
+Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
+
+	err := server.emailClient.sendEmail(context.Background(), emailAddress, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %s", err.Error())
+	}
+	return nil
+}
+
 func (server *serverStruct) sendEmailAddressUpdatedEmail(emailAddress string) error {
 	subject := "Your account's email address was recently updated"
 	body := `This email address is no longer tied to your account.
@@ -68,7 +81,7 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 
 func (server *serverStruct) sendPasswordUpdatedEmail(emailAddress string) error {
 	subject := "Your account's password was recently updated"
-	body := `Your account password was recently updated. If you did not make this change, please reset your password immediately.
+	body := `Your account password was recently updated. If you did not make this change, please secure your account by resetting your password immediately.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 
