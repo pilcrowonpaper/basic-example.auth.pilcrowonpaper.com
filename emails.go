@@ -72,7 +72,7 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 }
 
 func (server *serverStruct) sendEmailAddressUpdatedEmail(emailAddress string) error {
-	subject := "Your account's email address was recently updated"
+	subject := "Your account email address was recently updated"
 	body := `This email address is no longer tied to your account.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
@@ -85,7 +85,7 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 }
 
 func (server *serverStruct) sendPasswordUpdatedEmail(emailAddress string) error {
-	subject := "Your account's password was recently updated"
+	subject := "Your account password was recently updated"
 	body := `Your account password was recently updated. If you did not make this change, please secure your account by resetting your password immediately.
 
 Basic auth example: https://basic-example.auth.pilcrowonpaper.com`

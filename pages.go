@@ -383,7 +383,7 @@ func createResetPasswordPageHTML(requestId string) string {
 	title := "Reset your password | Basic auth example"
 
 	bodyHTML := `<h1>Reset your password</h1>
-<p>Enter your account's email address and we'll email you a password reset code.</p>
+<p>Enter your account email address and we'll email you a password reset code.</p>
 <form id="reset-password-form">
 	<label for="reset-password-form-email-address-input">Email address</label>
 	<input id="reset-password-form-email-address-input" name="email_address" type="email" autocomplete="username" required />
