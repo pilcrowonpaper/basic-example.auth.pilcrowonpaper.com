@@ -42,10 +42,16 @@ const (
 
 func (server *serverStruct) createSignupAction(requestId string, emailAddress string) (string, string) {
 	const (
+		errorCodeInvalidEmailAddress     = "invalid_email_address"
 		errorCodeEmailAddressAlreadyUsed = "email_address_already_used"
 		errorCodeRateLimited             = "rate_limited"
 		errorCodeUnexpectedError         = "unexpected_error"
 	)
+
+	emailAddressValid := verifyAccountIdentifierEmailAddressPattern(emailAddress)
+	if !emailAddressValid {
+		return "", errorCodeInvalidEmailAddress
+	}
 
 	emailAddressAvailable, err := server.checkUserEmailAddressAvailability(emailAddress)
 	if err != nil {
@@ -270,7 +276,7 @@ func (server *serverStruct) signInAction(requestId string, emailAddress string, 
 		errorCodeUnexpectedError     = "unexpected_error"
 	)
 
-	emailAddressValid := verifyEmailAddressPattern(emailAddress)
+	emailAddressValid := verifyAccountIdentifierEmailAddressPattern(emailAddress)
 	if !emailAddressValid {
 		return "", errorCodeInvalidEmailAddress
 	}
@@ -792,7 +798,7 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId
 		return errorCodeNewEmailAddressAlreadySet
 	}
 
-	if !verifyEmailAddressPattern(newEmailAddress) {
+	if !verifyAccountIdentifierEmailAddressPattern(newEmailAddress) {
 		return errorCodeInvalidEmailAddress
 	}
 
@@ -1187,7 +1193,7 @@ func (server *serverStruct) createPasswordResetAction(requestId string, emailAdd
 		errorCodeUnexpectedError     = "unexpected_error"
 	)
 
-	if !verifyEmailAddressPattern(emailAddress) {
+	if !verifyAccountIdentifierEmailAddressPattern(emailAddress) {
 		return "", errorCodeInvalidEmailAddress
 	}
 

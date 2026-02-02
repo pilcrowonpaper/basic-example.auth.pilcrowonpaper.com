@@ -1,11 +1,10 @@
 package main
 
 import (
-	"slices"
 	"strings"
 )
 
-func verifyEmailAddressPattern(email string) bool {
+func verifyAccountIdentifierEmailAddressPattern(email string) bool {
 	if len(email) > 100 {
 		return false
 	}
@@ -13,55 +12,29 @@ func verifyEmailAddressPattern(email string) bool {
 	if len(parts) != 2 {
 		return false
 	}
-	localPartAllowed := verifyEmailAddressLocalPart(parts[0])
+	localPartAllowed := verifyEmailAddressPart(parts[0])
 	if !localPartAllowed {
 		return false
 	}
-	domainPartAllowed := verifyEmailAddressDomainPart(parts[1])
+	domainPartAllowed := verifyEmailAddressPart(parts[1])
 	if !localPartAllowed {
 		return false
 	}
 	return domainPartAllowed
 }
 
-func verifyEmailAddressLocalPart(localPart string) bool {
-	if len(localPart) < 1 {
+func verifyEmailAddressPart(part string) bool {
+	if len(part) < 1 {
 		return false
 	}
-	allowedSpecialCharacters := []rune{'!', '#', '%', '&', '\'', '*', '+', '-', '/', '=', '?', '^', '_', '{', '|', '}', '~', '.'}
-	for _, char := range localPart {
+	for _, char := range part {
 		if char >= 'a' && char <= 'z' {
-			continue
-		}
-		if char >= 'A' && char <= 'Z' {
 			continue
 		}
 		if char >= '0' && char <= '9' {
 			continue
 		}
-		if slices.Contains(allowedSpecialCharacters, char) {
-			continue
-		}
-		return false
-	}
-	return true
-}
-
-func verifyEmailAddressDomainPart(domainPart string) bool {
-	if len(domainPart) < 1 {
-		return false
-	}
-	for _, char := range domainPart {
-		if char >= 'a' && char <= 'z' {
-			continue
-		}
-		if char >= 'A' && char <= 'Z' {
-			continue
-		}
-		if char >= '0' && char <= '9' {
-			continue
-		}
-		if char == '.' || char == '-' {
+		if char == '.' || char == '-' || char == '_' || char == '+' {
 			continue
 		}
 		return false

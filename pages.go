@@ -84,7 +84,7 @@ func createSignUpPageHTML(requestId string) string {
 	bodyHTML := `<h1>Create an account</h1>
 <p>All accounts are permanently deleted at midnight UTC each day. For security purposes, logs (which may include your IP address and email address) are retained for up to 90 days. These logs are processed and stored by <a href="https://cloudflare.com">Cloudflare</a> and <a href="https://railway.com">Railway</a>. We do not share or sell this data to any third parties.</p>
 <form id="sign-up-form">
-	<label for="sign-up-form-email-address-input">Email address</label>
+	<label for="sign-up-form-email-address-input">Email address (lowercase)</label>
 	<input id="sign-up-form-email-address-input" name="email_address" type="email" required />
 	<button id="sign-up-form-submit-button">Continue</button>
 </form>
@@ -166,7 +166,7 @@ func createSignInPage(requestId string) string {
 
 	bodyHTML := `<h1>Sign in</h1>
 <form id="sign-in-form">
-	<label for="sign-in-form-email-address-input">Email address</label>
+	<label for="sign-in-form-email-address-input">Email address (lowercase)</label>
 	<input id="sign-in-form-email-address-input" name="email_address" type="email" autocomplete="username" required/>
 	<label for="sign-in-form-password-input">Password</label>
 	<input id="sign-in-form-password-input" name="password" type="password" autocomplete="current-password" required/>
@@ -391,7 +391,7 @@ func createResetPasswordPageHTML(requestId string) string {
 	bodyHTML := `<h1>Reset your password</h1>
 <p>Enter your account email address and we'll email you a password reset code.</p>
 <form id="reset-password-form">
-	<label for="reset-password-form-email-address-input">Email address</label>
+	<label for="reset-password-form-email-address-input">Email address (lowercase)</label>
 	<input id="reset-password-form-email-address-input" name="email_address" type="email" autocomplete="username" required />
 	<button id="reset-password-form-submit-button">Continue</button>
 </form>`
