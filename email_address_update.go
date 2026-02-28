@@ -327,7 +327,7 @@ func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId stri
 		if rollbackErr != nil {
 			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return fmt.Errorf("failed to delete from password_reset table: %s", err.Error())
+		return fmt.Errorf("failed to delete from email_address_update table: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_reset WHERE user_id = ?", &sqlitex.ExecOptions{
