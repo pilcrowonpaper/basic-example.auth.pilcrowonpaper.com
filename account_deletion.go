@@ -227,7 +227,7 @@ func (server *serverStruct) completeAccountDeletion(accountDeletionId string) er
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user WHERE id IN (SELECT user.id FROM user INNER JOIN session ON user.id = session.user_id INNER JOIN account_deletion ON session.id = account_deletion.session_id WHERE account_deletion.id = ? AND account_deletion.user_identity_verified = 1)", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user WHERE id IN (SELECT session.user_id FROM session INNER JOIN account_deletion ON session.id = account_deletion.session_id WHERE account_deletion.id = ? AND account_deletion.user_identity_verified = 1)", &sqlitex.ExecOptions{
 		Args: []any{accountDeletionId},
 	})
 	if err != nil {
