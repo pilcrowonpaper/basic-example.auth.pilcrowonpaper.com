@@ -24,7 +24,7 @@ type accountDeletionStruct struct {
 }
 
 func (accountDeletion *accountDeletionStruct) compareSecretAgainstHash(secret []byte) bool {
-	hashed := hashPasswordResetSecret(secret)
+	hashed := hashAccountDeletionSecret(secret)
 	hashEqual := constantTimeCompare(hashed, accountDeletion.secretHash)
 	return hashEqual
 }
