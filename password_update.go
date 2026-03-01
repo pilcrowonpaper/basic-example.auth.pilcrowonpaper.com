@@ -278,8 +278,9 @@ func (server *serverStruct) completePasswordUpdate(passwordUpdateId string, newU
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return fmt.Errorf("failed to commit transaction: %s", rollbackErr.Error())
+			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
+		return fmt.Errorf("failed to commit transaction: %s", err.Error())
 	}
 
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)

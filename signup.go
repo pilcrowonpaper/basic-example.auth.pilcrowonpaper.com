@@ -292,8 +292,9 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, fmt.Errorf("failed to commit transaction: %s", rollbackErr.Error())
+			return userStruct{}, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
+		return userStruct{}, fmt.Errorf("failed to commit transaction: %s", err.Error())
 	}
 
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
