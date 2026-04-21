@@ -143,6 +143,7 @@ func checkLatestSchema(databaseConnection *sqlite.Conn, currentSchemaHash []byte
 
 func (server *serverStruct) cleanDatabase() error {
 	now := time.Now()
+	userCreatedThreshold := now.Add(24 * time.Hour * -1)
 	signupCreationThreshold := now.Add(20 * time.Minute * -1)
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
@@ -156,7 +157,9 @@ func (server *serverStruct) cleanDatabase() error {
 		return fmt.Errorf("failed to begin transaction: %s", err.Error())
 	}
 
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user", nil)
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user WHERE created_at <= ?", &sqlitex.ExecOptions{
+		Args: []any{userCreatedThreshold.Unix()},
+	})
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)

@@ -15,7 +15,7 @@ var homePageStylesheet string
 func createHomePageHTML(requestId string) string {
 	title := "Basic auth example"
 	bodyHTML := `<h1>Basic auth example</h1>
-<p>This an example website that implements email address and password authentication following best practices. All accounts are automatically deleted at midnight (UTC).</p>
+<p>This an example website that implements email address and password authentication following best practices. All accounts older than 24 hours are automatically deleted at midnight (UTC).</p>
 <div id="auth">
 	<a href="/sign-in" class="block-button">Sign in</a>
 	<a href="/sign-up" class="block-button">Create an account</a>
@@ -78,7 +78,7 @@ var signUpPageStylesheet string
 func createSignUpPageHTML(requestId string) string {
 	title := "Create an account | Basic auth example"
 	bodyHTML := `<h1>Create an account</h1>
-<p>All accounts are permanently deleted at midnight UTC each day. For security purposes, logs (which may include your IP address and email address) are retained for up to 90 days. These logs are processed and stored by <a href="https://cloudflare.com">Cloudflare</a> and <a href="https://railway.com">Railway</a>. We do not share or sell this data to any third parties.</p>
+<p>All accounts older than 24 hours are permanently deleted at midnight UTC each day. For security purposes, logs (which may include your IP address and email address) are retained for up to 90 days. These logs are processed and stored by <a href="https://cloudflare.com">Cloudflare</a> and <a href="https://railway.com">Railway</a>. We do not share or sell this data to any third parties.</p>
 <form id="sign-up-form">
 	<label for="sign-up-form-email-address-input">Email address (lowercase)</label>
 	<input id="sign-up-form-email-address-input" name="email_address" type="email" required />
