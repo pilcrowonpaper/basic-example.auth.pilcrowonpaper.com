@@ -77,7 +77,7 @@ func main() {
 	serverLogging := serverLoggingStruct{}
 	logsEnvValues := strings.SplitSeq(logsEnvValue, ",")
 	for logsEnvValue := range logsEnvValues {
-		if logsEnvValue == "action_event" {
+		if logsEnvValue == "request_event" {
 			serverLogging.requestEvent = true
 		} else if logsEnvValue == "action_error" {
 			serverLogging.actionError = true
@@ -85,6 +85,8 @@ func main() {
 			serverLogging.backgroundJob = true
 		} else if logsEnvValue == "action_result" {
 			serverLogging.actionResult = true
+		} else if logsEnvValue == "request_email" {
+			serverLogging.requestEmail = true
 		} else {
 			log.Fatalf("unknown LOGS environment variable value item: %s", logsEnvValue)
 		}
