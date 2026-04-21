@@ -54,19 +54,19 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionCreateSignup {
+	if actionName == actionStartSignup {
 		emailAddress, err := values.GetString("email_address")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		signupToken, errorCode := server.createSignupAction(requestId, emailAddress)
+		signupToken, errorCode := server.startSignupAction(requestId, emailAddress)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCreateSignup, errorCode)
+			server.logActionErrorResult(requestId, actionStartSignup, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCreateSignup)
+		server.logActionSuccessResult(requestId, actionStartSignup)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("signup_token", signupToken)
@@ -75,19 +75,19 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionDeleteSignup {
+	if actionName == actionCancelSignup {
 		signupToken, err := values.GetString("signup_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deleteSignupAction(requestId, signupToken)
+		errorCode := server.cancelSignupAction(requestId, signupToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeleteSignup, errorCode)
+			server.logActionErrorResult(requestId, actionCancelSignup, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeleteSignup)
+		server.logActionSuccessResult(requestId, actionCancelSignup)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -186,55 +186,55 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionDeleteSession {
+	if actionName == actionSignOut {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deleteSessionAction(requestId, sessionToken)
+		errorCode := server.signOutAction(requestId, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeleteSession, errorCode)
+			server.logActionErrorResult(requestId, actionSignOut, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeleteSession)
+		server.logActionSuccessResult(requestId, actionSignOut)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
 	}
 
-	if actionName == actionDeleteAllSessions {
+	if actionName == actionSignOutAllDevices {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deleteAllSessionsAction(requestId, sessionToken)
+		errorCode := server.signOutAllDevicesAction(requestId, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeleteAllSessions, errorCode)
+			server.logActionErrorResult(requestId, actionSignOutAllDevices, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeleteAllSessions)
+		server.logActionSuccessResult(requestId, actionSignOutAllDevices)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
 	}
 
-	if actionName == actionCreatePasswordUpdate {
+	if actionName == actionStartPasswordUpdate {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		passwordUpdateToken, errorCode := server.createPasswordUpdateAction(requestId, sessionToken)
+		passwordUpdateToken, errorCode := server.startPasswordUpdateAction(requestId, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCreatePasswordUpdate, errorCode)
+			server.logActionErrorResult(requestId, actionStartPasswordUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCreatePasswordUpdate)
+		server.logActionSuccessResult(requestId, actionStartPasswordUpdate)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("password_update_token", passwordUpdateToken)
@@ -243,7 +243,7 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionDeletePasswordUpdate {
+	if actionName == actionCancelPasswordUpdate {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
@@ -254,13 +254,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deletePasswordUpdateAction(requestId, sessionToken, passwordUpdateToken)
+		errorCode := server.cancelPasswordUpdateAction(requestId, sessionToken, passwordUpdateToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeletePasswordUpdate, errorCode)
+			server.logActionErrorResult(requestId, actionCancelPasswordUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeletePasswordUpdate)
+		server.logActionSuccessResult(requestId, actionCancelPasswordUpdate)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -314,7 +314,7 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		newSessionToken, errorCode := server.setPasswordUpdateNewPasswordAction(requestId, sessionToken, passwordUpdateToken, newPassword)
+		errorCode := server.setPasswordUpdateNewPasswordAction(requestId, sessionToken, passwordUpdateToken, newPassword)
 		if errorCode != "" {
 			server.logActionErrorResult(requestId, actionSetPasswordUpdateNewPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
@@ -322,26 +322,23 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		}
 		server.logActionSuccessResult(requestId, actionSetPasswordUpdateNewPassword)
 
-		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
-		resultValuesJSONBuilder.AddString("new_session_token", newSessionToken)
-		resultValuesJSON := resultValuesJSONBuilder.Done()
-		writeActionSuccessResult(w, requestId, resultValuesJSON)
+		writeActionSuccessResult(w, requestId, "{}")
 		return
 	}
 
-	if actionName == actionCreateEmailAddressUpdate {
+	if actionName == actionStartEmailAddressUpdate {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		emailAddressUpdateToken, errorCode := server.createEmailAddressUpdateAction(requestId, sessionToken)
+		emailAddressUpdateToken, errorCode := server.startEmailAddressUpdateAction(requestId, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCreateEmailAddressUpdate, errorCode)
+			server.logActionErrorResult(requestId, actionStartEmailAddressUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCreateEmailAddressUpdate)
+		server.logActionSuccessResult(requestId, actionStartEmailAddressUpdate)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("email_address_update_token", emailAddressUpdateToken)
@@ -350,7 +347,7 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionDeleteEmailAddressUpdate {
+	if actionName == actionCancelEmailAddressUpdate {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
@@ -361,13 +358,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deleteEmailAddressUpdateAction(requestId, sessionToken, emailAddressUpdateToken)
+		errorCode := server.cancelEmailAddressUpdateAction(requestId, sessionToken, emailAddressUpdateToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeleteEmailAddressUpdate, errorCode)
+			server.logActionErrorResult(requestId, actionCancelEmailAddressUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeleteEmailAddressUpdate)
+		server.logActionSuccessResult(requestId, actionCancelEmailAddressUpdate)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -480,19 +477,19 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionCreateAccountDeletion {
+	if actionName == actionStartAccountDeletion {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		accountDeletionToken, errorCode := server.createAccountDeletionAction(requestId, sessionToken)
+		accountDeletionToken, errorCode := server.startAccountDeletionAction(requestId, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCreateAccountDeletion, errorCode)
+			server.logActionErrorResult(requestId, actionStartAccountDeletion, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCreateAccountDeletion)
+		server.logActionSuccessResult(requestId, actionStartAccountDeletion)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("account_deletion_token", accountDeletionToken)
@@ -501,7 +498,7 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionDeleteAccountDeletion {
+	if actionName == actionCancelAccountDeletion {
 		sessionToken, err := values.GetString("session_token")
 		if err != nil {
 			w.WriteHeader(400)
@@ -512,13 +509,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deleteAccountDeletionAction(requestId, sessionToken, accountDeletionToken)
+		errorCode := server.cancelAccountDeletionAction(requestId, sessionToken, accountDeletionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeleteAccountDeletion, errorCode)
+			server.logActionErrorResult(requestId, actionCancelAccountDeletion, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeleteAccountDeletion)
+		server.logActionSuccessResult(requestId, actionCancelAccountDeletion)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -575,19 +572,19 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionCreatePasswordReset {
+	if actionName == actionStartPasswordReset {
 		emailAddress, err := values.GetString("email_address")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		passwordResetToken, errorCode := server.createPasswordResetAction(requestId, emailAddress)
+		passwordResetToken, errorCode := server.startPasswordResetAction(requestId, emailAddress)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCreatePasswordReset, errorCode)
+			server.logActionErrorResult(requestId, actionStartPasswordReset, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCreatePasswordReset)
+		server.logActionSuccessResult(requestId, actionStartPasswordReset)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("password_reset_token", passwordResetToken)
@@ -596,19 +593,19 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionDeletePasswordReset {
+	if actionName == actionCancelPasswordReset {
 		passwordResetToken, err := values.GetString("password_reset_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.deletePasswordResetAction(requestId, passwordResetToken)
+		errorCode := server.cancelPasswordResetAction(requestId, passwordResetToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionDeletePasswordReset, errorCode)
+			server.logActionErrorResult(requestId, actionCancelPasswordReset, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionDeletePasswordReset)
+		server.logActionSuccessResult(requestId, actionCancelPasswordReset)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -735,7 +732,7 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	}
 
 	user, err := server.getUser(session.userId)
-	if errors.Is(err, errUserNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		server.setBlankSessionTokenCookie(w)
 		w.Header().Set("Location", "/sign-in")
 		w.WriteHeader(303)
@@ -921,7 +918,7 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	}
 
 	user, err := server.getUser(session.userId)
-	if errors.Is(err, errUserNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		server.setBlankSessionTokenCookie(w)
 		server.setBlankPasswordUpdateTokenCookie(w)
 		w.Header().Set("Location", "/sign-in")
@@ -1035,7 +1032,7 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	}
 
 	user, err := server.getUser(session.userId)
-	if errors.Is(err, errUserNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		server.setBlankSessionTokenCookie(w)
 		server.setBlankEmailAddressUpdateTokenCookie(w)
 		w.Header().Set("Location", "/sign-in")
@@ -1217,7 +1214,7 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	}
 
 	user, err := server.getUser(session.userId)
-	if errors.Is(err, errUserNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		server.setBlankSessionTokenCookie(w)
 		server.setBlankAccountDeletionTokenCookie(w)
 		w.Header().Set("Location", "/sign-in")
@@ -1314,26 +1311,7 @@ func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWrit
 		return
 	}
 
-	// Get user only if the password reset is still valid.
-	// Using getUser() can return the old email address if the email address was updated (and the password reset was invalidated)
-	// after validateRequestPasswordResetToken() but before this call.
-	// This is especially important because password reset can be handled by clients not authenticated as the user.
-	user, err := server.getPasswordResetUser(passwordReset.id)
-	if errors.Is(err, errPasswordResetNotFound) {
-		server.setBlankPasswordResetTokenCookie(w)
-		w.Header().Set("Location", "/reset-password")
-		w.WriteHeader(303)
-		return
-	}
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to get password reset user: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
-		return
-	}
-
-	pageHTML := createResetPasswordVerifyCodePageHTML(requestId, passwordResetToken, user)
+	pageHTML := createResetPasswordVerifyCodePageHTML(requestId, passwordResetToken, passwordReset.emailAddress)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
@@ -1360,9 +1338,8 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 		return
 	}
 
-	// See resetPasswordVerifyCodePageRoute()
-	user, err := server.getPasswordResetUser(passwordReset.id)
-	if errors.Is(err, errPasswordResetNotFound) {
+	user, err := server.getUser(passwordReset.userId)
+	if errors.Is(err, errItemNotFound) {
 		server.setBlankPasswordResetTokenCookie(w)
 		w.Header().Set("Location", "/reset-password")
 		w.WriteHeader(303)
@@ -1376,7 +1353,7 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 		return
 	}
 
-	pageHTML := createResetPasswordSetNewPasswordPageHTML(requestId, passwordResetToken, user)
+	pageHTML := createResetPasswordSetNewPasswordPageHTML(requestId, passwordResetToken, user.emailAddress)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }

@@ -1,14 +1,7 @@
 #links {
 	display: flex;
 	place-items: center;
-	column-gap: 1rem;
+	gap: 1rem;
+	flex-wrap: wrap;
 	margin-top: 1.5rem;
-}
-
-#create-account-link,
-#forgot-password-link {
-	color: var(--link-color);
-	text-decoration: underline;
-	cursor: pointer;
-	display: block;
 }

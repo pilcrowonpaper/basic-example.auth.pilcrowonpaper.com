@@ -1,15 +1,7 @@
 #auth {
-	margin-top: 1.5rem;
 	display: flex;
 	place-items: center;
-	column-gap: 1rem;
-}
-
-#auth a {
-	padding: 0.5rem 1rem;
-	color: white;
-	background-color: var(--button-color);
-	border-radius: 5px;
-	cursor: pointer;
-	display: block;
+	gap: 1rem;
+	flex-wrap: wrap;
+	margin-top: 1rem;
 }

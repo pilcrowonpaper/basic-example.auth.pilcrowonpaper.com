@@ -13,7 +13,7 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 		email_address: emailAddress,
 	};
 	const requestBodyJSONObject = {
-		action: "create_password_reset",
+		action: "start_password_reset",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -23,6 +23,8 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
+	let passwordResetToken;
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -49,12 +51,7 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
 
-		if (window.location.protocol === "https:") {
-			document.cookie = `password_reset_token=${resultJSONObject.values.password_reset_token}; Max-Age=2400; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `password_reset_token=${resultJSONObject.values.password_reset_token}; Max-Age=2400; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("password_reset_updated");
+		passwordResetToken = resultJSONObject.values.password_reset_token;
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -62,6 +59,12 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 		return;
 	}
 
-	submitButtonElement.disabled = false;
+	if (window.location.protocol === "https:") {
+		document.cookie = `password_reset_token=${passwordResetToken}; Max-Age=3600; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `password_reset_token=${passwordResetToken}; Max-Age=3600; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("password_reset_updated");
+
 	window.location.href = "/reset-password/verify-code";
 });

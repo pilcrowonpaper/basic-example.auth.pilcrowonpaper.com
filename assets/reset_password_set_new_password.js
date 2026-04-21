@@ -4,7 +4,7 @@ const passwordResetToken = pageDataJSONObject.password_reset_token;
 const clientStateEventChannel = new BroadcastChannel("client_state_event");
 clientStateEventChannel.addEventListener("message", (event) => {
 	if (event.data === "password_reset_updated") {
-		window.location.href = window.location.href;
+		window.location.reload();
 	}
 });
 
@@ -32,6 +32,8 @@ document.getElementById("set-new-password-form").addEventListener("submit", asyn
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
+	let sessionToken;
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -41,12 +43,13 @@ document.getElementById("set-new-password-form").addEventListener("submit", asyn
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_password_reset_token") {
-				clientStateEventChannel.postMessage("password_reset_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("password_reset_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/reset-password";
 				return;
@@ -64,21 +67,23 @@ document.getElementById("set-new-password-form").addEventListener("submit", asyn
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
 
-		clientStateEventChannel.postMessage("password_reset_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-			document.cookie = `session_token=${resultJSONObject.values.session_token}; Max-Age=86400; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
-			document.cookie = `session_token=${resultJSONObject.values.session_token}; Max-Age=86400; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("session_updated");
+		sessionToken = resultJSONObject.values.session_token;
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		submitButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+		document.cookie = `session_token=${sessionToken}; Max-Age=86400; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
+		document.cookie = `session_token=${sessionToken}; Max-Age=86400; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("password_reset_updated");
+	clientStateEventChannel.postMessage("session_updated");
 
 	window.location.href = "/account";
 });
@@ -92,7 +97,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		password_reset_token: passwordResetToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_password_reset",
+		action: "cancel_password_reset",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -102,6 +107,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -111,24 +117,18 @@ cancelButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_password_reset_token") {
-				clientStateEventChannel.postMessage("password_reset_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("password_reset_updated");
+				
 				alert("Your session has expired.");
 				window.location.href = "/reset-password";
 				return;
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
-
-		clientStateEventChannel.postMessage("password_reset_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		}
 	} catch (error) {
 		console.error(error);
@@ -136,6 +136,13 @@ cancelButtonElement.addEventListener("click", async () => {
 		cancelButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
+		}
+	clientStateEventChannel.postMessage("password_reset_updated");
 
 	window.location.href = "/reset-password";
 });

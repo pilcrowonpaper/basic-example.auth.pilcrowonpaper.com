@@ -60,8 +60,6 @@ func (server *serverStruct) setBlankPasswordUpdateTokenCookie(w http.ResponseWri
 	http.SetCookie(w, cookie)
 }
 
-var errPasswordUpdateNotFound = errors.New("password update not found")
-
 func (server *serverStruct) createPasswordUpdate(sessionId string) (passwordUpdateStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
@@ -96,6 +94,9 @@ func (server *serverStruct) createPasswordUpdate(sessionId string) (passwordUpda
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+		return passwordUpdateStruct{}, nil, errItemConflict
+	}
 	if err != nil {
 		return passwordUpdateStruct{}, nil, fmt.Errorf("failed to insert into password_update table: %s", err.Error())
 	}
@@ -143,13 +144,13 @@ func (server *serverStruct) getPasswordUpdate(passwordUpdateId string) (password
 	}
 
 	if len(passwordUpdates) < 1 {
-		return passwordUpdateStruct{}, errPasswordUpdateNotFound
+		return passwordUpdateStruct{}, errItemNotFound
 	}
 
 	passwordUpdate := passwordUpdates[0]
 
-	if time.Since(passwordUpdate.createdAt) >= time.Minute*20 {
-		return passwordUpdateStruct{}, errPasswordUpdateNotFound
+	if time.Since(passwordUpdate.createdAt) >= time.Hour {
+		return passwordUpdateStruct{}, errItemNotFound
 	}
 
 	return passwordUpdate, nil
@@ -170,7 +171,7 @@ func (server *serverStruct) validatePasswordUpdateToken(passwordUpdateToken stri
 	}
 
 	update, err := server.getPasswordUpdate(updateId)
-	if errors.Is(err, errPasswordUpdateNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		return passwordUpdateStruct{}, errInvalidPasswordUpdateToken
 	}
 	if err != nil {
@@ -250,19 +251,18 @@ func (server *serverStruct) completePasswordUpdate(passwordUpdateId string, newU
 		}
 		return fmt.Errorf("failed to insert into user table: %s", err.Error())
 	}
-
-	if len(userIds) < 1 {
+	affectedCount := databaseWriteConnection.Changes()
+	if affectedCount < 1 {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
 			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return errPasswordUpdateNotFound
+		return errItemNotFound
 	}
-	userId := userIds[0]
 
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM session WHERE user_id = ?", &sqlitex.ExecOptions{
-		Args: []any{userId},
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_update WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{passwordUpdateId},
 	})
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
@@ -303,7 +303,7 @@ func (server *serverStruct) deletePasswordUpdate(passwordUpdateId string) error 
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errPasswordUpdateNotFound
+		return errItemNotFound
 	}
 	return nil
 }

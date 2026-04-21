@@ -60,8 +60,6 @@ func (server *serverStruct) setBlankAccountDeletionTokenCookie(w http.ResponseWr
 	http.SetCookie(w, cookie)
 }
 
-var errAccountDeletionNotFound = errors.New("account deletion not found")
-
 func (server *serverStruct) createAccountDeletion(sessionId string) (accountDeletionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
@@ -96,6 +94,9 @@ func (server *serverStruct) createAccountDeletion(sessionId string) (accountDele
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+		return accountDeletionStruct{}, nil, errItemConflict
+	}
 	if err != nil {
 		return accountDeletionStruct{}, nil, fmt.Errorf("failed to insert into account_deletion table: %s", err.Error())
 	}
@@ -142,13 +143,13 @@ func (server *serverStruct) getAccountDeletion(accountDeletionId string) (accoun
 	}
 
 	if len(accountDeletions) < 1 {
-		return accountDeletionStruct{}, errAccountDeletionNotFound
+		return accountDeletionStruct{}, errItemNotFound
 	}
 
 	accountDeletion := accountDeletions[0]
 
-	if time.Since(accountDeletion.createdAt) >= time.Minute*20 {
-		return accountDeletionStruct{}, errAccountDeletionNotFound
+	if time.Since(accountDeletion.createdAt) >= time.Hour {
+		return accountDeletionStruct{}, errItemNotFound
 	}
 
 	return accountDeletion, nil
@@ -169,7 +170,7 @@ func (server *serverStruct) validateAccountDeletionToken(accountDeletionToken st
 	}
 
 	accountDeletion, err := server.getAccountDeletion(accountDeletionId)
-	if errors.Is(err, errAccountDeletionNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		return accountDeletionStruct{}, errInvalidAccountDeletionToken
 	}
 	if err != nil {
@@ -217,7 +218,7 @@ func (server *serverStruct) setAccountDeletionAsUserIdentityVerified(accountDele
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errAccountDeletionNotFound
+		return errItemNotFound
 	}
 	return nil
 }
@@ -237,7 +238,7 @@ func (server *serverStruct) completeAccountDeletion(accountDeletionId string) er
 	deleteUserCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if deleteUserCount < 1 {
-		return errAccountDeletionNotFound
+		return errItemNotFound
 	}
 	return nil
 }
@@ -257,7 +258,7 @@ func (server *serverStruct) deleteAccountDeletion(accountDeletionId string) erro
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errAccountDeletionNotFound
+		return errItemNotFound
 	}
 	return nil
 }

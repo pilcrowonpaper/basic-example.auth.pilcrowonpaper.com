@@ -59,6 +59,62 @@ func (server *serverStruct) logActionError(requestId string, errorMessage string
 	fmt.Println(logJSON)
 }
 
+func (server *serverStruct) logRequestEvent(eventName string, requestId string, tags requestEventTagsStruct) {
+	if !server.logging.requestEvent {
+		return
+	}
+
+	now := time.Now()
+
+	tagsJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
+	if tags.userId != "" {
+		tagsJSONBuilder.AddString("user_id", tags.userId)
+	}
+	if tags.sessionId != "" {
+		tagsJSONBuilder.AddString("session_id", tags.sessionId)
+	}
+	if tags.signupId != "" {
+		tagsJSONBuilder.AddString("signup_id", tags.signupId)
+	}
+	if tags.emailAddressUpdateId != "" {
+		tagsJSONBuilder.AddString("email_address_update_id", tags.emailAddressUpdateId)
+	}
+	if tags.passwordUpdateId != "" {
+		tagsJSONBuilder.AddString("password_update_id", tags.passwordUpdateId)
+	}
+	if tags.accountDeletionId != "" {
+		tagsJSONBuilder.AddString("account_deletion_id", tags.accountDeletionId)
+	}
+	if tags.passwordResetId != "" {
+		tagsJSONBuilder.AddString("password_reset_id", tags.passwordResetId)
+	}
+	if tags.emailAddress != "" {
+		tagsJSONBuilder.AddString("email_address", tags.emailAddress)
+	}
+	tagsJSON := tagsJSONBuilder.Done()
+
+	logJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
+	logJSONBuilder.AddString("type", "action_event")
+	logJSONBuilder.AddInt64("timestamp", now.Unix())
+	logJSONBuilder.AddString("request_id", requestId)
+	logJSONBuilder.AddString("event", eventName)
+	logJSONBuilder.AddJSON("tags", tagsJSON)
+	logJSON := logJSONBuilder.Done()
+
+	fmt.Println(logJSON)
+}
+
+type requestEventTagsStruct struct {
+	userId               string
+	sessionId            string
+	signupId             string
+	emailAddressUpdateId string
+	passwordUpdateId     string
+	accountDeletionId    string
+	passwordResetId      string
+	emailAddress         string
+}
+
 func (server *serverStruct) logBackgroundJobRun(runId string, backgroundJobName string) {
 	if !server.logging.backgroundJob {
 		return
@@ -119,4 +175,31 @@ func (loggingJSONStringCharacterEscapingBehaviorStruct) UseCharacter(r rune) boo
 
 func (loggingJSONStringCharacterEscapingBehaviorStruct) UseShorthandEscapeSequence(_ rune) bool {
 	return true
+}
+
+const (
+	emailTypeSignupEmailAddressVerificationCode                = "signup_email_address_verification_code"
+	emailTypeSignedInNotification                              = "signed_in_notification"
+	emailTypeEmailAddressUpdatedNotification                   = "email_address_updated_notification"
+	emailTypeEmailAddressUpdateNewEmailAddressVerificationCode = "email_address_update_new_email_address_verification_code"
+	emailTypePasswordUpdatedNotification                       = "password_updated_notification"
+	emailTypePasswordResetCode                                 = "password_reset_code"
+)
+
+func (server *serverStruct) logRequestEmail(requestId string, emailAddress string, emailType string) {
+	if !server.logging.requestEmail {
+		return
+	}
+
+	now := time.Now()
+
+	logJSONBuilder := json.NewObjectBuilder(loggingJSONStringCharacterEscapingBehavior)
+	logJSONBuilder.AddString("type", "request_email")
+	logJSONBuilder.AddString("request_id", requestId)
+	logJSONBuilder.AddInt64("timestamp", now.Unix())
+	logJSONBuilder.AddString("email_address", emailAddress)
+	logJSONBuilder.AddString("email_type", emailType)
+	logJSON := logJSONBuilder.Done()
+
+	fmt.Println(logJSON)
 }

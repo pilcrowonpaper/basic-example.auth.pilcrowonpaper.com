@@ -4,12 +4,11 @@ const sessionToken = pageDataJSONObject.session_token;
 const clientStateEventChannel = new BroadcastChannel("client_state_event");
 clientStateEventChannel.addEventListener("message", (event) => {
 	if (event.data === "session_updated") {
-		window.location.href = window.location.href;
+		window.location.reload();
 	}
 });
 
 const updateEmailAddressButtonElement = document.getElementById("update-email-address-button");
-
 updateEmailAddressButtonElement.addEventListener("click", async () => {
 	updateEmailAddressButtonElement.disabled = true;
 
@@ -17,7 +16,7 @@ updateEmailAddressButtonElement.addEventListener("click", async () => {
 		session_token: sessionToken,
 	};
 	const requestBodyJSONObject = {
-		action: "create_email_address_update",
+		action: "start_email_address_update",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -27,6 +26,8 @@ updateEmailAddressButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
+	let emailAddressUpdateToken;
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -36,12 +37,13 @@ updateEmailAddressButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
@@ -54,12 +56,7 @@ updateEmailAddressButtonElement.addEventListener("click", async () => {
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
 
-		if (window.location.protocol === "https:") {
-			document.cookie = `email_address_update_token=${resultJSONObject.values.email_address_update_token}; Max-Age=2400; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `email_address_update_token=${resultJSONObject.values.email_address_update_token}; Max-Age=2400; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("email_address_update_updated");
+		emailAddressUpdateToken = resultJSONObject.values.email_address_update_token;
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -67,13 +64,17 @@ updateEmailAddressButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
+	if (window.location.protocol === "https:") {
+		document.cookie = `email_address_update_token=${emailAddressUpdateToken}; Max-Age=3600; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `email_address_update_token=${emailAddressUpdateToken}; Max-Age=3600; SameSite=Lax; Path=/`;
+	}
 	clientStateEventChannel.postMessage("email_address_update_updated");
-	updateEmailAddressButtonElement.disabled = false;
+
 	window.location.href = "/update-email-address/verify-password";
 });
 
 const updatePasswordButtonElement = document.getElementById("update-password-button");
-
 updatePasswordButtonElement.addEventListener("click", async () => {
 	updatePasswordButtonElement.disabled = true;
 
@@ -81,7 +82,7 @@ updatePasswordButtonElement.addEventListener("click", async () => {
 		session_token: sessionToken,
 	};
 	const requestBodyJSONObject = {
-		action: "create_password_update",
+		action: "start_password_update",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -91,6 +92,8 @@ updatePasswordButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
+	let passwordUpdateToken;
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -100,12 +103,13 @@ updatePasswordButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
@@ -118,12 +122,7 @@ updatePasswordButtonElement.addEventListener("click", async () => {
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
 
-		if (window.location.protocol === "https:") {
-			document.cookie = `password_update_token=${resultJSONObject.values.password_update_token}; Max-Age=2400; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `password_update_token=${resultJSONObject.values.password_update_token}; Max-Age=2400; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("password_update_updated");
+		passwordUpdateToken = resultJSONObject.values.password_update_token;
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -131,12 +130,17 @@ updatePasswordButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	updatePasswordButtonElement.disabled = false;
+	if (window.location.protocol === "https:") {
+		document.cookie = `password_update_token=${passwordUpdateToken}; Max-Age=3600; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `password_update_token=${passwordUpdateToken}; Max-Age=3600; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("password_update_updated");
+
 	window.location.href = "/update-password/verify-password";
 });
 
 const signOutButtonElement = document.getElementById("sign-out-button");
-
 signOutButtonElement.addEventListener("click", async () => {
 	signOutButtonElement.disabled = true;
 
@@ -144,7 +148,7 @@ signOutButtonElement.addEventListener("click", async () => {
 		session_token: sessionToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_session",
+		action: "sign_out",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -154,6 +158,7 @@ signOutButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+	
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -163,12 +168,13 @@ signOutButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
@@ -180,13 +186,6 @@ signOutButtonElement.addEventListener("click", async () => {
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
-
-		if (window.location.protocol === "https:") {
-			document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("session_updated");
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -194,12 +193,17 @@ signOutButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	signOutButtonElement.disabled = false;
+	if (window.location.protocol === "https:") {
+		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("session_updated");
+
 	window.location.href = "/sign-in";
 });
 
 const signOutAllDevicesButtonElement = document.getElementById("sign-out-all-devices-button");
-
 signOutAllDevicesButtonElement.addEventListener("click", async () => {
 	const confirmed = confirm("Do you want to sign out of all devices?");
 	if (!confirmed) {
@@ -212,7 +216,7 @@ signOutAllDevicesButtonElement.addEventListener("click", async () => {
 		session_token: sessionToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_all_sessions",
+		action: "sign_out_all_devices",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -222,6 +226,7 @@ signOutAllDevicesButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -231,12 +236,13 @@ signOutAllDevicesButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
@@ -248,13 +254,6 @@ signOutAllDevicesButtonElement.addEventListener("click", async () => {
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
-
-		if (window.location.protocol === "https:") {
-			document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("session_updated");
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -262,12 +261,17 @@ signOutAllDevicesButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	signOutAllDevicesButtonElement.disabled = false;
+	if (window.location.protocol === "https:") {
+		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("session_updated");
+
 	window.location.href = "/sign-in";
 });
 
 const deleteAccountButton = document.getElementById("delete-account-button");
-
 deleteAccountButton.addEventListener("click", async () => {
 	deleteAccountButton.disabled = true;
 
@@ -275,7 +279,7 @@ deleteAccountButton.addEventListener("click", async () => {
 		session_token: sessionToken,
 	};
 	const requestBodyJSONObject = {
-		action: "create_account_deletion",
+		action: "start_account_deletion",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -285,6 +289,8 @@ deleteAccountButton.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
+	let accountDeletionToken;
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -294,12 +300,13 @@ deleteAccountButton.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
@@ -312,12 +319,7 @@ deleteAccountButton.addEventListener("click", async () => {
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
 
-		if (window.location.protocol === "https:") {
-			document.cookie = `account_deletion_token=${resultJSONObject.values.account_deletion_token}; Max-Age=2400; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `account_deletion_token=${resultJSONObject.values.account_deletion_token}; Max-Age=2400; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("account_deletion_updated");
+		accountDeletionToken = resultJSONObject.values.account_deletion_token;
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -325,6 +327,12 @@ deleteAccountButton.addEventListener("click", async () => {
 		return;
 	}
 
-	deleteAccountButton.disabled = false;
+	if (window.location.protocol === "https:") {
+		document.cookie = `account_deletion_token=${accountDeletionToken}; Max-Age=3600; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `account_deletion_token=${accountDeletionToken}; Max-Age=3600; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("account_deletion_updated");
+
 	window.location.href = "/delete-account/verify-password";
 });

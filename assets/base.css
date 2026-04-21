@@ -49,6 +49,10 @@ h1 {
 	margin-bottom: 2rem;
 }
 
+form {
+	margin-top: 1rem;
+}
+
 form label {
 	display: block;
 	margin-bottom: 0.5rem;
@@ -66,14 +70,37 @@ form input {
 	margin-bottom: 1rem;
 }
 
-h1 + p + form {
-	margin-top: 1rem;
-}
-
 p > a {
 	color: var(--link-color);
 	text-decoration: underline;
 	cursor: pointer;
+}
+
+.block-button {
+	padding: 0.5rem 1rem;
+	color: white;
+	background-color: var(--button-color);
+	border-radius: 5px;
+	cursor: pointer;
+	display: block;
+}
+
+.block-button:disabled {
+	color: var(--disabled-color);
+	background-color: var(--disabled-background-color);
+	cursor: default;
+}
+
+.link-button {
+	display: block;;
+	color: var(--link-color);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.link-button:disabled {
+	color: var(--disabled-color);
+	cursor: default;
 }
 
 form button {
@@ -96,9 +123,8 @@ form button:disabled {
 * {
 	margin: 0;
 	padding: 0;
-	font-size: 1rem;
+	font-size: inherit;
 	font-weight: normal;
-	font: inherit;
 	color: inherit;
 	background: none;
 	border: none;
@@ -110,6 +136,7 @@ form button:disabled {
 
 html {
 	font-family: system-ui;
+	font-size: 1rem;
 }
 
 img,

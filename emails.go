@@ -41,7 +41,7 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 }
 
 func (server *serverStruct) sendPasswordResetCodeEmail(emailAddress string, code string) error {
-	formattedCode := formatCode(code)
+	formattedCode := formatPasswordResetCode(code)
 
 	subject := "Reset your account password"
 	bodyTemplate := `Your password reset code is: %s

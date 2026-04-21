@@ -17,8 +17,8 @@ func createHomePageHTML(requestId string) string {
 	bodyHTML := `<h1>Basic auth example</h1>
 <p>This an example website that implements email address and password authentication following best practices. All accounts are automatically deleted at midnight (UTC).</p>
 <div id="auth">
-	<a href="/sign-in">Sign in</a>
-	<a href="/sign-up">Create an account</a>
+	<a href="/sign-in" class="block-button">Sign in</a>
+	<a href="/sign-up" class="block-button">Create an account</a>
 </div>`
 
 	pageHTML := createPageHTML(requestId, title, bodyHTML, "", homePageStylesheet, "")
@@ -39,27 +39,23 @@ func createAccountPageHTML(requestId string, sessionToken string, user userStruc
 	<h2>Account information</h2>
 	<p id="account-info-user-id">User ID: %s</p>
 	<p id="account-info-email-address">Email address: %s</p>
-</section>
-<section>
-	<h2>Update email address</h2>
-	<button id="update-email-address-button">Update email address</button>
+	<button id="update-email-address-button" class="block-button">Update email address</button>
 </section>
 <section>
 	<h2>Update password</h2>
-	<p id="update-password-description">Updating your password will sign you out of all other devices..</p>
-	<button id="update-password-button">Update password</button>
+	<button id="update-password-button" class="block-button">Update password</button>
 </section>
 <section>
 	<h2>Sign out</h2>
 	<div id="sign-out-controls">
-		<button id="sign-out-button">Sign out</button>
-		<button id="sign-out-all-devices-button">Sign out of all devices</button>
+		<button id="sign-out-button" class="block-button">Sign out</button>
+		<button id="sign-out-all-devices-button" class="link-button">Sign out of all devices</button>
 	</div>
 </section>
 <section>
 	<h2>Delete your account</h2>
 	<p id="delete-account-description">Deleting your account will permanently remove all your data. Some logs (including your IP address and email address) may be retained for up to 90 days.</p>
-	<button id="delete-account-button">Delete account</button>
+	<button id="delete-account-button" class="block-button">Delete account</button>
 </section>`
 
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.id), html.EscapeString(user.emailAddress))
@@ -88,7 +84,7 @@ func createSignUpPageHTML(requestId string) string {
 	<input id="sign-up-form-email-address-input" name="email_address" type="email" required />
 	<button id="sign-up-form-submit-button">Continue</button>
 </form>
-<a id="sign-in-link" href="/sign-in">Sign in with an existing account</a>`
+<a id="sign-in-link" href="/sign-in" class="link-button">Sign in with an existing account</a>`
 
 	pageHTML := createPageHTML(requestId, title, bodyHTML, signUpPageScript, signUpPageStylesheet, "")
 
@@ -112,8 +108,8 @@ func createSignUpVerifyEmailAddressPageHTML(requestId string, signupToken string
 	<button id="verify-verification-code-form-submit-button">Verify email address</button>
 </form>
 <div id="controls">
-	<button id="resend-verification-code-button">Resend verification code</button>
-	<button id="cancel-button">Cancel</button>
+	<button id="resend-verification-code-button" class="link-button">Resend verification code</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
 </div>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(signup.emailAddress))
 
@@ -143,7 +139,7 @@ func createSignUpSetPasswordPageHTML(requestId string, signupToken string, signu
 	<input id="set-password-form-password-input" name="password" type="password" autocomplete="new-password" required minlength="10" />
 	<button id="set-password-form-submit-button">Create account</button>
 </form>
-<button id="cancel-button">Cancel</button>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(signup.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
@@ -173,8 +169,8 @@ func createSignInPage(requestId string) string {
 	<button id="sign-in-form-submit-button">Continue</button>
 </form>
 <div id="links">
-	<a id="create-account-link" href="/sign-up">Create a new account</a>
-	<a id="forgot-password-link" href="/reset-password">Forgot password</a>
+	<a id="create-account-link" href="/sign-up" class="link-button">Create a new account</a>
+	<a id="forgot-password-link" href="/reset-password" class="link-button">Forgot password</a>
 </div>`
 
 	pageHTML := createPageHTML(requestId, title, bodyHTML, signInPageScript, signInPageStylesheet, "")
@@ -198,7 +194,7 @@ func createUpdatePasswordVerifyPasswordPageHTML(requestId string, sessionToken s
 	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
 	<button id="verify-password-form-submit-button">Continue</button>
 </form>
-<button id="cancel-button">Cancel</button>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
@@ -227,7 +223,7 @@ func createUpdatePasswordSetNewPasswordPageHTML(requestId string, sessionToken s
 	<input id="set-new-password-form-password-input" name="new_password" type="password" autocomplete="new-password" required minlength="10" />
 	<button id="set-new-password-form-submit-button">Update password</button>
 </form>
-<button id="cancel-button">Cancel</button>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("session_token", sessionToken)
@@ -255,7 +251,7 @@ func createUpdateEmailAddressVerifyPasswordPageHTML(requestId string, sessionTok
 	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
 	<button id="verify-password-form-submit-button">Continue</button>
 </form>
-<button id="cancel-button">Cancel</button>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
@@ -283,7 +279,7 @@ func createUpdateEmailAddressSetNewEmailAddressPageHTML(requestId string, sessio
 	<input id="set-new-email-address-form-new-email-address-input" name="new_email_address" type="email" autocomplete="username" required />
 	<button id="set-new-email-address-form-submit-button">Continue</button>
 </form>
-<button id="cancel-button">Cancel</button>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("session_token", sessionToken)
@@ -312,8 +308,8 @@ func createUpdateEmailAddressVerifyNewEmailAddressPageHTML(requestId string, ses
 	<button id="verify-verification-code-form-submit-button">Update email address</button>
 </form>
 <div id="controls">
-	<button id="resend-verification-code-button">Resend verification code</button>
-	<button id="cancel-button">Cancel</button>
+	<button id="resend-verification-code-button" class="link-button">Resend verification code</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
 </div>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(emailAddressUpdate.newEmailAddress))
 
@@ -343,7 +339,7 @@ func createDeleteAccountVerifyPasswordPageHTML(requestId string, sessionToken st
 	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
 	<button id="verify-password-form-submit-button">Continue</button>
 </form>
-<button id="cancel-button">Cancel</button>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
@@ -368,8 +364,8 @@ func createDeleteAccountConfirmPageHTML(requestId string, sessionToken string, a
 	bodyHTML := `<h1>Delete your account</h1>
 <p>Are you sure you want to delete your account? This action is permanent and cannot be undone.<p>
 <div id="controls">
-	<button id="confirm-button">Delete my account</button>
-	<button id="cancel-button">Cancel</button>
+	<button id="confirm-button" class="block-button">Delete my account</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
 </div>`
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
@@ -407,18 +403,18 @@ var resetPasswordVerifyCodePageScript string
 //go:embed assets/reset_password_verify_code.css
 var resetPasswordVerifyCodePageStylesheet string
 
-func createResetPasswordVerifyCodePageHTML(requestId string, passwordResetToken string, user userStruct) string {
+func createResetPasswordVerifyCodePageHTML(requestId string, passwordResetToken string, emailAddress string) string {
 	title := "Verify password reset code | Basic auth example"
 
 	bodyHTMLTemplate := `<h1>Verify password reset code</h1>
-<p>We sent a 16-digit code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
+<p>We sent an 8-digit code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
 <form id="verify-code-form">
 	<label for="verify-code-form-code-input">Password reset code (hyphens and spaces are optional)</label>
 	<input id="verify-code-form-code-input" name="code" autocomplete="none" required />
 	<button id="verify-code-form-submit-button">Continue</button>
 </form>
-<button id="cancel-button">Cancel</button>`
-	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
+<button id="cancel-button" class="link-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(emailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("password_reset_token", passwordResetToken)
@@ -446,19 +442,19 @@ var resetPasswordSetNewPasswordPageScript string
 //go:embed assets/reset_password_set_new_password.css
 var resetPasswordSetNewPasswordPageStylesheet string
 
-func createResetPasswordSetNewPasswordPageHTML(requestId string, passwordResetToken string, user userStruct) string {
+func createResetPasswordSetNewPasswordPageHTML(requestId string, passwordResetToken string, userEmailAddress string) string {
 	title := "Set your new password | Basic auth example"
 
 	bodyHTMLTemplate := `<h1>Set your new password</h1>
 <p>Use a strong password with at least 10 characters.</p>
 <form id="set-new-password-form">
 	<input name="email_address" autocomplete="username" value="%s" hidden />
-	<label for="set-new-password-form-new-password-input">Code</label>
+	<label for="set-new-password-form-new-password-input">New password</label>
 	<input id="set-new-password-form-new-password-input" name="new_password" type="password" autocomplete="new-password" required minlength="10" />
 	<button id="set-new-password-form-submit-button">Reset password</button>
 </form>
-<button id="cancel-button">Cancel</button>`
-	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
+<button id="cancel-button" class="link-button class="link-button"">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(userEmailAddress))
 
 	dataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	dataJSONBuilder.AddString("password_reset_token", passwordResetToken)
@@ -471,6 +467,9 @@ func createResetPasswordSetNewPasswordPageHTML(requestId string, passwordResetTo
 
 //go:embed assets/base.css
 var baseStylesheet string
+
+//go:embed assets/base.js
+var baseScript string
 
 func createPageHTML(requestId string, title string, bodyHTML string, script string, stylesheet string, dataJSON string) string {
 	htmlTemplate := `<html lang="en">
@@ -487,10 +486,12 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	<meta property="og:site_name" content="Basic auth example" />
 	<meta property="og:description" content="An example website that implements email address and password authentication following best practices." />
 	<meta property="og:url" content="https://basic-example.auth.pilcrowonpaper.com" />
-	<meta property="og:image" content="https://pilcrowonpaper.com/profile.jpg" />
+	<meta property="og:image" content="https://pilcrowonpaper.com/pilcrow.jpeg" />
 
 	<meta name="twitter:card" content="summary">
     <meta name="twitter:site" content="@pilcrowonpaper">
+
+	<link rel="icon" type="image/jpeg" href="https://pilcrowonpaper.com/pilcrow.jpeg">
 
 	<style>%s</style>
 	<style>%s</style>
@@ -509,6 +510,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 </body>
 <script type="module">%s</script>
 <script id="data" type="application/json">%s</script>
+<script type="module">%s</script>
 </html>`
 
 	pageHTML := fmt.Sprintf(
@@ -521,6 +523,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 		html.EscapeString(requestId),
 		script,
 		dataJSON,
+		baseScript,
 	)
 
 	return pageHTML

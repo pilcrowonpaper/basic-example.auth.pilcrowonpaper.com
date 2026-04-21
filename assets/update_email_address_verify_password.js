@@ -5,7 +5,7 @@ const emailAddressUpdateToken = pageDataJSONObject.email_address_update_token;
 const clientStateEventChannel = new BroadcastChannel("client_state_event");
 clientStateEventChannel.addEventListener("message", (event) => {
 	if (event.data === "session_updated" || event.data === "email_address_update_updated") {
-		window.location.href = window.location.href;
+		window.location.reload();
 	}
 });
 
@@ -34,6 +34,7 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -43,17 +44,27 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
 			}
 			if (resultJSONObject.error_code === "invalid_email_address_update_token") {
+				if (window.location.protocol === "https:") {
+					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+				} else {
+					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
+				}
+				clientStateEventChannel.postMessage("email_address_update_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/account";
 				return;
@@ -70,14 +81,14 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
-
-		clientStateEventChannel.postMessage("email_address_update_updated");
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		submitButtonElement.disabled = false;
 		return;
 	}
+
+	clientStateEventChannel.postMessage("email_address_update_updated");
 
 	window.location.href = "/update-email-address/set-new-email-address";
 });
@@ -92,7 +103,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		email_address_update_token: emailAddressUpdateToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_email_address_update",
+		action: "cancel_email_address_update",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -102,6 +113,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -111,35 +123,32 @@ cancelButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
 			}
 			if (resultJSONObject.error_code === "invalid_email_address_update_token") {
-				clientStateEventChannel.postMessage("email_address_update_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("email_address_update_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/account";
 				return;
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
-
-		clientStateEventChannel.postMessage("email_address_update_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		}
 	} catch (error) {
 		console.error(error);
@@ -147,6 +156,13 @@ cancelButtonElement.addEventListener("click", async () => {
 		cancelButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("email_address_update_updated");
 
 	window.location.href = "/account";
 });

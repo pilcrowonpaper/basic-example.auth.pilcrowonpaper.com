@@ -78,7 +78,7 @@ func main() {
 	logsEnvValues := strings.SplitSeq(logsEnvValue, ",")
 	for logsEnvValue := range logsEnvValues {
 		if logsEnvValue == "action_event" {
-			serverLogging.actionEvent = true
+			serverLogging.requestEvent = true
 		} else if logsEnvValue == "action_error" {
 			serverLogging.actionError = true
 		} else if logsEnvValue == "background_job" {
@@ -153,14 +153,14 @@ func generateLongItemId() string {
 }
 
 func generatePasswordResetCode() string {
-	idBytes := make([]byte, 10)
-	rand.Read(idBytes)
-	verificationCode := base32.NewEncoding("ABCDEFGHJKLMNPQRSTUVWXYZ23456789").EncodeToString(idBytes)
-	return verificationCode
+	emailCodeBytes := make([]byte, 5)
+	rand.Read(emailCodeBytes)
+	emailCode := base32.NewEncoding("ABCDEFGHJKLMNPQRSTUVWXYZ23456789").EncodeToString(emailCodeBytes)
+	return emailCode
 }
 
-func formatCode(code string) string {
-	stringBytes := make([]byte, 19)
+func formatPasswordResetCode(code string) string {
+	stringBytes := make([]byte, 9)
 	stringBytes[0] = code[0]
 	stringBytes[1] = code[1]
 	stringBytes[2] = code[2]
@@ -170,16 +170,6 @@ func formatCode(code string) string {
 	stringBytes[6] = code[5]
 	stringBytes[7] = code[6]
 	stringBytes[8] = code[7]
-	stringBytes[9] = '-'
-	stringBytes[10] = code[8]
-	stringBytes[11] = code[9]
-	stringBytes[12] = code[10]
-	stringBytes[13] = code[11]
-	stringBytes[14] = '-'
-	stringBytes[15] = code[12]
-	stringBytes[16] = code[13]
-	stringBytes[17] = code[14]
-	stringBytes[18] = code[15]
 	return string(stringBytes)
 }
 

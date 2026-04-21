@@ -59,8 +59,6 @@ func (server *serverStruct) setBlankSessionTokenCookie(w http.ResponseWriter) {
 	http.SetCookie(w, cookie)
 }
 
-var errSessionNotFound = errors.New("session not found")
-
 func (server *serverStruct) createSession(userId string) (sessionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
@@ -93,6 +91,9 @@ func (server *serverStruct) createSession(userId string) (sessionStruct, []byte,
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+		return sessionStruct{}, nil, errItemConflict
+	}
 	if err != nil {
 		return sessionStruct{}, nil, fmt.Errorf("failed to insert into session table: %s", err.Error())
 	}
@@ -137,7 +138,7 @@ func (server *serverStruct) getSession(sessionId string) (sessionStruct, error) 
 	}
 
 	if len(sessions) < 1 {
-		return sessionStruct{}, errSessionNotFound
+		return sessionStruct{}, errItemNotFound
 	}
 
 	return sessions[0], nil
@@ -158,7 +159,7 @@ func (server *serverStruct) validateSessionToken(sessionToken string) (sessionSt
 	}
 
 	session, err := server.getSession(sessionId)
-	if errors.Is(err, errSessionNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		return sessionStruct{}, errInvalidSessionToken
 	}
 	if err != nil {
@@ -206,7 +207,7 @@ func (server *serverStruct) deleteSession(sessionId string) error {
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errSessionNotFound
+		return errItemNotFound
 	}
 	return nil
 }

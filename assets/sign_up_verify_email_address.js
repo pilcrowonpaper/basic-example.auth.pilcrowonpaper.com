@@ -4,7 +4,7 @@ const signupToken = pageDataJSONObject.signup_token;
 const clientStateEventChannel = new BroadcastChannel("client_state_event");
 clientStateEventChannel.addEventListener("message", (event) => {
 	if (event.data === "session_updated" || event.data === "signup_updated") {
-		window.location.href = window.location.href;
+		window.location.reload();
 	}
 });
 
@@ -33,6 +33,7 @@ document.getElementById("verify-verification-code-form").addEventListener("submi
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+	
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -42,12 +43,13 @@ document.getElementById("verify-verification-code-form").addEventListener("submi
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_signup_token") {
-				clientStateEventChannel.postMessage("signup_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("signup_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
 				return;
@@ -64,14 +66,14 @@ document.getElementById("verify-verification-code-form").addEventListener("submi
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
-
-		clientStateEventChannel.postMessage("signup_updated");
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		submitButtonElement.disabled = false;
 		return;
 	}
+
+	clientStateEventChannel.postMessage("signup_updated");
 
 	window.location.href = "/sign-up/set-password";
 });
@@ -94,6 +96,7 @@ resendVerificationCodeButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -103,12 +106,13 @@ resendVerificationCodeButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_signup_token") {
-				clientStateEventChannel.postMessage("signup_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("signup_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
 				return;
@@ -140,7 +144,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		signup_token: signupToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_signup",
+		action: "cancel_signup",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -171,19 +175,19 @@ cancelButtonElement.addEventListener("click", async () => {
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
-
-		clientStateEventChannel.postMessage("signup_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
-		}
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		cancelButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("signup_updated");
 
 	window.location.href = "/sign-up";
 });

@@ -65,8 +65,6 @@ func (server *serverStruct) setBlankSignupTokenCookie(w http.ResponseWriter) {
 	http.SetCookie(w, cookie)
 }
 
-var errSignupEmailAddressAlreadyUsed = errors.New("signup email address already used")
-var errSignupNotFound = errors.New("signup not found")
 var errInvalidSignupToken = errors.New("invalid signup token")
 
 func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []byte, error) {
@@ -96,10 +94,10 @@ func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []b
 		Args: []any{signup.id, signup.secretHash, signup.emailAddress, signup.emailAddressVerificationCode, signup.createdAt.Unix()},
 	})
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+		return signupStruct{}, nil, errItemConflict
+	}
 	if err != nil {
-		if sqlite.ErrCode(err) == sqlite.ResultConstraintUnique {
-			return signupStruct{}, nil, errSignupEmailAddressAlreadyUsed
-		}
 		return signupStruct{}, nil, fmt.Errorf("failed to insert into signup table: %s", err.Error())
 	}
 
@@ -144,12 +142,12 @@ func (server *serverStruct) getSignup(signupId string) (signupStruct, error) {
 	}
 
 	if len(signups) < 1 {
-		return signupStruct{}, errSignupNotFound
+		return signupStruct{}, errItemNotFound
 	}
 	signup := signups[0]
 
 	if time.Since(signup.createdAt) >= time.Hour*24 {
-		return signupStruct{}, errSignupNotFound
+		return signupStruct{}, errItemNotFound
 	}
 
 	return signup, nil
@@ -168,7 +166,7 @@ func (server *serverStruct) validateSignupToken(signupToken string) (signupStruc
 	}
 
 	signup, err := server.getSignup(signupId)
-	if errors.Is(err, errSignupNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		return signupStruct{}, errInvalidSignupToken
 	}
 	if err != nil {
@@ -216,27 +214,31 @@ func (server *serverStruct) setSignupAsEmailAddressVerified(signupId string) err
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errSignupNotFound
+		return errItemNotFound
 	}
 	return nil
 }
 
-func (server *serverStruct) completeSignup(signupId string, userPassword string) (userStruct, error) {
+func (server *serverStruct) completeSignup(signupId string, userPassword string) (userStruct, sessionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
 	userId := generateItemId()
 	userPasswordSalt := generateHashingSalt()
 	userPasswordHash := server.hashUserPassword(userPassword, userPasswordSalt)
 
+	sessionId := generateItemId()
+	sessionSecret := generateSessionSecret()
+	sessionSecretHash := hashSessionSecret(sessionSecret)
+
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return userStruct{}, fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "BEGIN IMMEDIATE", nil)
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return userStruct{}, fmt.Errorf("failed to begin transaction: %s", err.Error())
+		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to begin transaction: %s", err.Error())
 	}
 
 	emailAddresses := []string{}
@@ -249,29 +251,24 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		},
 	})
 	if err != nil {
-		if sqlite.ErrCode(err) == sqlite.ResultConstraintUnique {
-			rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
-			server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-			if rollbackErr != nil {
-				return userStruct{}, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
-			}
-			return userStruct{}, errUserEmailAddressAlreadyUsed
-		}
-
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, fmt.Errorf("failed to insert into user table: %s", err.Error())
+
+		if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintUnique || sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+			return userStruct{}, sessionStruct{}, nil, errItemConflict
+		}
+		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to insert into user table: %s", err.Error())
 	}
 	if len(emailAddresses) < 1 {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, errSignupNotFound
+		return userStruct{}, sessionStruct{}, nil, errItemNotFound
 	}
 	emailAddress := emailAddresses[0]
 
@@ -282,9 +279,28 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, fmt.Errorf("failed to delete from signup table: %s", err.Error())
+		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to delete from signup table: %s", err.Error())
+	}
+
+	session := sessionStruct{
+		id:         sessionId,
+		userId:     userId,
+		secretHash: sessionSecretHash,
+		createdAt:  nowSecondPrecision,
+	}
+
+	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO session (id, user_id, secret_hash, created_at) VALUES (?, ?, ?, ?)", &sqlitex.ExecOptions{
+		Args: []any{session.id, session.userId, session.secretHash, session.createdAt.Unix()},
+	})
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		if rollbackErr != nil {
+			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to insert into session table: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "COMMIT", nil)
@@ -292,9 +308,9 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, fmt.Errorf("failed to commit transaction: %s", err.Error())
+		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to commit transaction: %s", err.Error())
 	}
 
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -306,7 +322,7 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		passwordSalt: userPasswordSalt,
 		createdAt:    nowSecondPrecision,
 	}
-	return user, nil
+	return user, session, sessionSecret, nil
 }
 
 func (server *serverStruct) deleteSignup(signupId string) error {
@@ -324,7 +340,7 @@ func (server *serverStruct) deleteSignup(signupId string) error {
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errSignupNotFound
+		return errItemNotFound
 	}
 	return nil
 }

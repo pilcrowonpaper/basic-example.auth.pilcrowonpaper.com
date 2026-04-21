@@ -71,7 +71,6 @@ func (server *serverStruct) setBlankEmailAddressUpdateTokenCookie(w http.Respons
 	http.SetCookie(w, cookie)
 }
 
-var errEmailAddressUpdateNotFound = errors.New("email address update not found")
 var errInvalidEmailAddressUpdateToken = errors.New("invalid email address update token")
 
 func (server *serverStruct) createEmailAddressUpdate(sessionId string) (emailAddressUpdateStruct, []byte, error) {
@@ -109,6 +108,9 @@ func (server *serverStruct) createEmailAddressUpdate(sessionId string) (emailAdd
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+		return emailAddressUpdateStruct{}, nil, errItemConflict
+	}
 	if err != nil {
 		return emailAddressUpdateStruct{}, nil, fmt.Errorf("failed to insert into email_address_update table: %s", err.Error())
 	}
@@ -174,13 +176,13 @@ func (server *serverStruct) getEmailAddressUpdate(emailAddressUpdateId string) (
 	}
 
 	if len(emailAddressUpdates) < 1 {
-		return emailAddressUpdateStruct{}, errEmailAddressUpdateNotFound
+		return emailAddressUpdateStruct{}, errItemNotFound
 	}
 
 	emailAddressUpdate := emailAddressUpdates[0]
 
-	if time.Since(emailAddressUpdate.createdAt) >= time.Minute*20 {
-		return emailAddressUpdateStruct{}, errEmailAddressUpdateNotFound
+	if time.Since(emailAddressUpdate.createdAt) >= time.Hour {
+		return emailAddressUpdateStruct{}, errItemNotFound
 	}
 
 	return emailAddressUpdate, nil
@@ -199,7 +201,7 @@ func (server *serverStruct) validateEmailAddressUpdateToken(emailAddressUpdateTo
 	}
 
 	emailAddressUpdate, err := server.getEmailAddressUpdate(emailAddressUpdateId)
-	if errors.Is(err, errEmailAddressUpdateNotFound) {
+	if errors.Is(err, errItemNotFound) {
 		return emailAddressUpdateStruct{}, errInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
@@ -247,7 +249,7 @@ func (server *serverStruct) setEmailAddressUpdateAsUserIdentityVerified(emailAdd
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errEmailAddressUpdateNotFound
+		return errItemNotFound
 	}
 	return nil
 }
@@ -269,54 +271,93 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddress(emailAddressUpd
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return "", errEmailAddressUpdateNotFound
+		return "", errItemNotFound
 	}
 	return newEmailAddressVerificationCode, nil
 }
 
-func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId string) error {
+func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId string) (string, error) {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return "", fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "BEGIN IMMEDIATE", nil)
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to begin transaction: %s", err.Error())
+		return "", fmt.Errorf("failed to begin transaction: %s", err.Error())
 	}
 
-	userIds := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET email_address = email_address_update.new_email_address FROM session JOIN email_address_update ON email_address_update.session_id = session.id WHERE user.id = session.user_id AND email_address_update.id = ? AND email_address_update.user_identity_verified = 1 AND email_address_update.new_email_address IS NOT NULL RETURNING user.id", &sqlitex.ExecOptions{
-		Args: []any{emailAddressUpdateId},
-		ResultFunc: func(stmt *sqlite.Stmt) error {
-			userId := stmt.ColumnText(0)
-			userIds = append(userIds, userId)
-			return nil
+	oldEmailAddresses := []string{}
+	err = sqlitex.Execute(
+		databaseWriteConnection,
+		`SELECT user.email_address FROM email_address_update
+INNER JOIN session ON email_address_update.session_id = session.id
+INNER JOIN user ON session.user_id = user.id
+WHERE email_address_update.id = ?`,
+		&sqlitex.ExecOptions{
+			Args: []any{emailAddressUpdateId},
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				oldEmailAddress := stmt.ColumnText(0)
+
+				oldEmailAddresses = append(oldEmailAddresses, oldEmailAddress)
+				return nil
+			},
 		},
-	})
+	)
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-
-		if sqlite.ErrCode(err) == sqlite.ResultConstraintUnique {
-			return errUserEmailAddressAlreadyUsed
-		}
-		return fmt.Errorf("failed to insert into user table: %s", err.Error())
+		return "", fmt.Errorf("failed to select from email_address_update table: %s", err.Error())
 	}
 
-	if len(userIds) < 1 {
+	if len(oldEmailAddresses) < 1 {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return errEmailAddressUpdateNotFound
+		return "", errItemNotFound
 	}
-	userId := userIds[0]
+	oldEmailAddress := oldEmailAddresses[0]
+
+	err = sqlitex.Execute(
+		databaseWriteConnection,
+		`UPDATE user SET email_address = email_address_update.new_email_address
+FROM session
+INNER JOIN email_address_update ON email_address_update.session_id = session.id
+WHERE user.id = session.user_id
+AND email_address_update.id = ?
+AND email_address_update.user_identity_verified = 1
+AND email_address_update.new_email_address IS NOT NULL
+RETURNING user.id`,
+		&sqlitex.ExecOptions{
+			Args: []any{emailAddressUpdateId},
+		})
+	if err != nil {
+		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		if rollbackErr != nil {
+			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+
+		if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintUnique || sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
+			return "", errItemConflict
+		}
+		return "", fmt.Errorf("failed to insert into user table: %s", err.Error())
+	}
+	affectedCount := databaseWriteConnection.Changes()
+	if affectedCount < 1 {
+		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
+		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
+		if rollbackErr != nil {
+			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+		}
+		return "", errItemNotFound
+	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM email_address_update WHERE id = ?", &sqlitex.ExecOptions{
 		Args: []any{emailAddressUpdateId},
@@ -325,21 +366,9 @@ func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId stri
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return fmt.Errorf("failed to delete from email_address_update table: %s", err.Error())
-	}
-
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_reset WHERE user_id = ?", &sqlitex.ExecOptions{
-		Args: []any{userId},
-	})
-	if err != nil {
-		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
-		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		if rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
-		}
-		return fmt.Errorf("failed to delete from password_reset table: %s", err.Error())
+		return "", fmt.Errorf("failed to delete from email_address_update table: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "COMMIT", nil)
@@ -347,14 +376,14 @@ func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId stri
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return fmt.Errorf("failed to commit transaction: %s", err.Error())
+		return "", fmt.Errorf("failed to commit transaction: %s", err.Error())
 	}
 
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 
-	return nil
+	return oldEmailAddress, nil
 }
 
 func (server *serverStruct) deleteEmailAddressUpdate(emailAddressUpdateId string) error {
@@ -372,7 +401,7 @@ func (server *serverStruct) deleteEmailAddressUpdate(emailAddressUpdateId string
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if affectedCount < 1 {
-		return errEmailAddressUpdateNotFound
+		return errItemNotFound
 	}
 	return nil
 }

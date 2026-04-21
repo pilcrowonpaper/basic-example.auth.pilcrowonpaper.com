@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -25,12 +24,9 @@ type userStruct struct {
 	createdAt    time.Time
 }
 
-var errUserNotFound = errors.New("user not found")
-var errUserEmailAddressAlreadyUsed = errors.New("user email address already used")
-
 func (server *serverStruct) hashUserPassword(password string, salt []byte) []byte {
 	server.cpuIntensiveSemaphore.Acquire(context.Background(), 1)
-	passwordHash := argon2.IDKey([]byte(password), salt, 1, 64*1024, 3, 32)
+	passwordHash := argon2.IDKey([]byte(password), salt, 1, 16*1024, 3, 32)
 	server.cpuIntensiveSemaphore.Release(1)
 	runtime.GC()
 	return passwordHash
@@ -126,7 +122,7 @@ func (server *serverStruct) getUser(userId string) (userStruct, error) {
 	}
 
 	if len(users) < 1 {
-		return userStruct{}, errUserNotFound
+		return userStruct{}, errItemNotFound
 	}
 
 	return users[0], nil
@@ -171,7 +167,7 @@ func (server *serverStruct) getUserByEmailAddress(emailAddress string) (userStru
 	}
 
 	if len(users) < 1 {
-		return userStruct{}, errUserNotFound
+		return userStruct{}, errItemNotFound
 	}
 
 	return users[0], nil

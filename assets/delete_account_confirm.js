@@ -5,12 +5,11 @@ const accountDeletionToken = pageDataJSONObject.account_deletion_token;
 const clientStateEventChannel = new BroadcastChannel("client_state_event");
 clientStateEventChannel.addEventListener("message", (event) => {
 	if (event.data === "session_updated" || event.data === "account_deletion_updated") {
-		window.location.href = window.location.href;
+		window.location.reload();
 	}
 });
 
 const confirmButtonElement = document.getElementById("confirm-button");
-
 confirmButtonElement.addEventListener("click", async () => {
 	confirmButtonElement.disabled = true;
 
@@ -29,6 +28,7 @@ confirmButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -38,23 +38,27 @@ confirmButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
 			}
 			if (resultJSONObject.error_code === "invalid_account_deletion_token") {
-				clientStateEventChannel.postMessage("account_deletion_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("account_deletion_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/account";
 				return;
@@ -66,22 +70,21 @@ confirmButtonElement.addEventListener("click", async () => {
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
-
-		clientStateEventChannel.postMessage("account_deletion_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-			document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
-			document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("session_updated");
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		confirmButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("session_updated");
 
 	window.location.href = "/";
 });
@@ -96,7 +99,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		account_deletion_token: accountDeletionToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_account_deletion",
+		action: "cancel_account_deletion",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -115,35 +118,32 @@ cancelButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_session_token") {
-				clientStateEventChannel.postMessage("session_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
+					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("session_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
 				return;
 			}
 			if (resultJSONObject.error_code === "invalid_account_deletion_token") {
-				clientStateEventChannel.postMessage("account_deletion_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("account_deletion_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/account";
 				return;
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
-
-		clientStateEventChannel.postMessage("account_deletion_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		}
 	} catch (error) {
 		console.error(error);
@@ -151,6 +151,13 @@ cancelButtonElement.addEventListener("click", async () => {
 		cancelButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("account_deletion_updated");
 
 	window.location.href = "/account";
 });

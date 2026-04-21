@@ -33,10 +33,11 @@ type serverStruct struct {
 }
 
 type serverLoggingStruct struct {
-	actionEvent   bool
 	actionError   bool
 	backgroundJob bool
 	actionResult  bool
+	requestEmail  bool
+	requestEvent  bool
 }
 
 type serverFlagsStruct struct {

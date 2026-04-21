@@ -4,7 +4,7 @@ const signupToken = pageDataJSONObject.signup_token;
 const clientStateEventChannel = new BroadcastChannel("client_state_event");
 clientStateEventChannel.addEventListener("message", (event) => {
 	if (event.data === "session_updated" || event.data === "signup_updated") {
-		window.location.href = window.location.href;
+		window.location.reload();
 	}
 });
 
@@ -32,6 +32,8 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
+
+	let sessionToken;
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -41,12 +43,13 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_signup_token") {
-				clientStateEventChannel.postMessage("signup_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("signup_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
 				return;
@@ -64,21 +67,23 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
 		}
 
-		clientStateEventChannel.postMessage("signup_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-			document.cookie = `session_token=${resultJSONObject.values.session_token}; Max-Age=86400; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
-			document.cookie = `session_token=${resultJSONObject.values.session_token}; Max-Age=86400; SameSite=Lax; Path=/`;
-		}
-		clientStateEventChannel.postMessage("session_updated");
+		sessionToken = resultJSONObject.values.session_token;
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		submitButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+		document.cookie = `session_token=${sessionToken}; Max-Age=86400; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
+		document.cookie = `session_token=${sessionToken}; Max-Age=86400; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("signup_updated");
+	clientStateEventChannel.postMessage("session_updated");
 
 	window.location.href = "/account";
 });
@@ -92,7 +97,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		signup_token: signupToken,
 	};
 	const requestBodyJSONObject = {
-		action: "delete_signup",
+		action: "cancel_signup",
 		values: actionValuesJSONObject,
 	};
 	const requestBody = JSON.stringify(requestBodyJSONObject);
@@ -111,24 +116,18 @@ cancelButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_signup_token") {
-				clientStateEventChannel.postMessage("signup_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
+				clientStateEventChannel.postMessage("signup_updated");
+
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
 				return;
 			}
 			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
-
-		clientStateEventChannel.postMessage("signup_updated");
-		if (window.location.protocol === "https:") {
-			document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		} else {
-			document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		}
 	} catch (error) {
 		console.error(error);
@@ -136,6 +135,13 @@ cancelButtonElement.addEventListener("click", async () => {
 		cancelButtonElement.disabled = false;
 		return;
 	}
+
+	if (window.location.protocol === "https:") {
+		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
+	} else {
+		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	}
+	clientStateEventChannel.postMessage("signup_updated");
 
 	window.location.href = "/sign-up";
 });

@@ -1,29 +1,7 @@
 #controls {
 	display: flex;
 	place-items: center;
-	column-gap: 1rem;
+	gap: 1rem;
+	flex-wrap: wrap;
 	margin-top: 1.5rem;
-}
-
-#resend-verification-code-button {
-	color: var(--link-color);
-	text-decoration: underline;
-	cursor: pointer;
-	display: block;
-}
-
-#resend-verification-code-button:disabled {
-	color: var(--disabled-color);
-	cursor: default;
-}
-
-#cancel-button {
-	color: var(--link-color);
-	text-decoration: underline;
-	cursor: pointer;
-}
-
-#cancel-button:disabled {
-	color: var(--disabled-color);
-	cursor: default;
 }

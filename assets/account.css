@@ -8,41 +8,12 @@ h2 {
 	margin-bottom: 1rem;
 }
 
-#update-email-address-button,
-#update-password-button,
-#sign-out-button,
-#delete-account-button {
-	padding: 0.5rem 1rem;
-	color: white;
-	background-color: var(--button-color);
-	border-radius: 5px;
-	cursor: pointer;
-	display: block;
-}
-
-#update-email-address-button:disabled,
-#update-password-button:disabled,
-#sign-out-button:disabled,
-#delete-account-button:disabled {
-	color: var(--disabled-color);
-	background-color: var(--disabled-background-color);
-	cursor: default;
-}
-
-#sign-out-all-devices-button {
-	color: var(--link-color);
-	text-decoration: underline;
-	cursor: pointer;
-	display: block;
-}
-
-#sign-out-all-devices-button:disabled {
-	color: var(--disabled-color);
-	cursor: default;
-}
-
 #account-info-user-id {
 	margin-bottom: 0.5rem;
+}
+
+#account-info-email-address {
+	margin-bottom: 1rem;
 }
 
 #update-password-description {
@@ -52,7 +23,8 @@ h2 {
 #sign-out-controls {
 	display: flex;
 	place-items: center;
-	column-gap: 1rem;
+	gap: 1rem;
+	flex-wrap: wrap;
 }
 
 #delete-account-description {
