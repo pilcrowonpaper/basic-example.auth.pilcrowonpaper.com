@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"mime"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/pilcrowonpaper/go-json"
+
+	_ "embed"
 )
 
 const (
@@ -715,6 +718,9 @@ func writeActionSuccessResult(w http.ResponseWriter, requestId string, valuesJSO
 	w.Write(bodyJSONBytes)
 }
 
+//go:embed assets/home.css
+var homePageStylesheet string
+
 func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
@@ -730,10 +736,24 @@ func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	pageHTML := createHomePageHTML(requestId)
+	pageTitle := "Basic auth example"
+	bodyHTML := `<h1>Basic auth example</h1>
+<p>This an example website that implements email address and password authentication following best practices. All accounts older than 24 hours are automatically deleted at midnight (UTC).</p>
+<div id="auth">
+	<a href="/sign-in" class="block-button">Sign in</a>
+	<a href="/sign-up" class="block-button">Create an account</a>
+</div>`
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, "", homePageStylesheet, "")
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/account.js
+var accountPageScript string
+
+//go:embed assets/account.css
+var accountPageStylesheet string
 
 func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -766,10 +786,47 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	pageHTML := createAccountPageHTML(requestId, sessionToken, user)
+	pageTitle := "My account | Basic auth example"
+	bodyHTMLTemplate := `<h1>My account</h1>
+<section>
+	<h2>Account information</h2>
+	<p id="account-info-user-id">User ID: %s</p>
+	<p id="account-info-email-address">Email address: %s</p>
+	<button id="update-email-address-button" class="block-button">Update email address</button>
+</section>
+<section>
+	<h2>Update password</h2>
+	<button id="update-password-button" class="block-button">Update password</button>
+</section>
+<section>
+	<h2>Sign out</h2>
+	<div id="sign-out-controls">
+		<button id="sign-out-button" class="block-button">Sign out</button>
+		<button id="sign-out-all-devices-button" class="link-button">Sign out of all devices</button>
+	</div>
+</section>
+<section>
+	<h2>Delete your account</h2>
+	<p id="delete-account-description">Deleting your account will permanently remove all your data. Some logs (including your IP address and email address) may be retained for up to 90 days.</p>
+	<button id="delete-account-button" class="block-button">Delete account</button>
+</section>`
+
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.id), html.EscapeString(user.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, accountPageScript, accountPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/sign_up.js
+var signUpPageScript string
+
+//go:embed assets/sign_up.css
+var signUpPageStylesheet string
 
 func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
@@ -786,10 +843,26 @@ func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	pageHTML := createSignUpPageHTML(requestId)
+	pageTitle := "Create an account | Basic auth example"
+	bodyHTML := `<h1>Create an account</h1>
+<p>All accounts older than 24 hours are permanently deleted at midnight UTC each day. For security purposes, logs (which may include your IP address and email address) are retained for up to 90 days. These logs are processed and stored by <a href="https://cloudflare.com">Cloudflare</a> and <a href="https://railway.com">Railway</a>. We do not share or sell this data to any third parties.</p>
+<form id="sign-up-form">
+	<label for="sign-up-form-email-address-input">Email address (lowercase)</label>
+	<input id="sign-up-form-email-address-input" name="email_address" type="email" required />
+	<button id="sign-up-form-submit-button">Continue</button>
+</form>
+<a id="sign-in-link" href="/sign-in" class="link-button">Sign in with an existing account</a>`
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signUpPageScript, signUpPageStylesheet, "")
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/sign_up_verify_email_address.js
+var signUpVerifyEmailAddressPageScript string
+
+//go:embed assets/sign_up_verify_email_address.css
+var signUpVerifyEmailAddressPageStylesheet string
 
 func (server *serverStruct) verifySignupEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
@@ -827,10 +900,35 @@ func (server *serverStruct) verifySignupEmailAddressPageRoute(w http.ResponseWri
 		return
 	}
 
-	pageHTML := createSignUpVerifyEmailAddressPageHTML(requestId, signupToken, signup)
+	pageTitle := "Verify your email address | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify your email address</h1>
+<p>We sent an 8-digit verification code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
+<form id="verify-verification-code-form">
+	<label for="verify-verification-code-form-verification-code-input">Verification code (hyphens and spaces are optional)</label>
+	<input id="verify-verification-code-form-verification-code-input" name="verification_code" required />
+	<button id="verify-verification-code-form-submit-button">Verify email address</button>
+</form>
+<div id="controls">
+	<button id="resend-verification-code-button" class="link-button">Resend verification code</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
+</div>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(signup.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("signup_token", signupToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signUpVerifyEmailAddressPageScript, signUpVerifyEmailAddressPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/sign_up_set_password.js
+var signUpSetPasswordPageScript string
+
+//go:embed assets/sign_up_set_password.css
+var signUpSetPasswordPageStylesheet string
 
 func (server *serverStruct) setSignupPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
@@ -868,10 +966,33 @@ func (server *serverStruct) setSignupPasswordPageRoute(w http.ResponseWriter, r 
 		return
 	}
 
-	pageHTML := createSignUpSetPasswordPageHTML(requestId, signupToken, signup)
+	pageTitle := "Set your password | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Set your password</h1>
+<p>Use a strong password with at least 10 characters.</p>
+<form id="set-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden/>
+	<label for="set-password-form-password-input">Password</label>
+	<input id="set-password-form-password-input" name="password" type="password" autocomplete="new-password" required minlength="10" />
+	<button id="set-password-form-submit-button">Create account</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(signup.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("signup_token", signupToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signUpSetPasswordPageScript, signUpSetPasswordPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/sign_in.js
+var signInPageScript string
+
+//go:embed assets/sign_in.css
+var signInPageStylesheet string
 
 func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
@@ -888,10 +1009,31 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	pageHTML := createSignInPage(requestId)
+	pageTitle := "Sign in | Basic auth example"
+
+	bodyHTML := `<h1>Sign in</h1>
+<form id="sign-in-form">
+	<label for="sign-in-form-email-address-input">Email address (lowercase)</label>
+	<input id="sign-in-form-email-address-input" name="email_address" type="email" autocomplete="username" required/>
+	<label for="sign-in-form-password-input">Password</label>
+	<input id="sign-in-form-password-input" name="password" type="password" autocomplete="current-password" required/>
+	<button id="sign-in-form-submit-button">Continue</button>
+</form>
+<div id="links">
+	<a id="create-account-link" href="/sign-up" class="link-button">Create a new account</a>
+	<a id="forgot-password-link" href="/reset-password" class="link-button">Forgot password</a>
+</div>`
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signInPageScript, signInPageStylesheet, "")
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/update_password_verify_password.js
+var updatePasswordVerifyPasswordPageScript string
+
+//go:embed assets/update_password_verify_password.css
+var updatePasswordVerifyPasswordPageStylesheet string
 
 func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -953,10 +1095,33 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.Res
 		return
 	}
 
-	pageHTML := createUpdatePasswordVerifyPasswordPageHTML(requestId, sessionToken, passwordUpdateToken, user)
+	pageTitle := "Verify your password | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify your password</h1>
+<form id="verify-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
+	<label for="verify-password-form-password-input">Password</label>
+	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
+	<button id="verify-password-form-submit-button">Continue</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("password_update_token", passwordUpdateToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updatePasswordVerifyPasswordPageScript, updatePasswordVerifyPasswordPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/update_password_set_new_password.js
+var updatePasswordSetNewPasswordPageScript string
+
+//go:embed assets/update_password_set_new_password.css
+var updatePasswordSetNewPasswordPageStylesheet string
 
 func (server *serverStruct) setPasswordUpdateNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -1002,10 +1167,32 @@ func (server *serverStruct) setPasswordUpdateNewPasswordPageRoute(w http.Respons
 		return
 	}
 
-	pageHTML := createUpdatePasswordSetNewPasswordPageHTML(requestId, sessionToken, passwordUpdateToken)
+	pageTitle := "Set your new password | Basic auth example"
+
+	bodyHTML := `<h1>Set your new password</h1>
+<p>Use a strong password with at least 10 characters.</p>
+<form id="set-new-password-form">
+	<label for="set-new-password-form-password-input">New password</label>
+	<input id="set-new-password-form-password-input" name="new_password" type="password" autocomplete="new-password" required minlength="10" />
+	<button id="set-new-password-form-submit-button">Update password</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("password_update_token", passwordUpdateToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updatePasswordSetNewPasswordPageScript, updatePasswordSetNewPasswordPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/update_email_address_verify_password.js
+var updateEmailAddressVerifyPasswordPageScript string
+
+//go:embed assets/update_email_address_verify_password.css
+var updateEmailAddressVerifyPasswordPageStylesheet string
 
 func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -1067,10 +1254,33 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http
 		return
 	}
 
-	pageHTML := createUpdateEmailAddressVerifyPasswordPageHTML(requestId, sessionToken, emailAddressUpdateToken, user)
+	pageTitle := "Verify your password | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify your password</h1>
+<form id="verify-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
+	<label for="verify-password-form-password-input">Password</label>
+	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
+	<button id="verify-password-form-submit-button">Continue</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("email_address_update_token", emailAddressUpdateToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressVerifyPasswordPageScript, updateEmailAddressVerifyPasswordPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/update_email_address_set_new_email_address.js
+var updateEmailAddressSetNewEmailAddressPageScript string
+
+//go:embed assets/update_email_address_set_new_email_address.css
+var updateEmailAddressSetNewEmailAddressPageStylesheet string
 
 func (server *serverStruct) setEmailAddressUpdateNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -1121,10 +1331,31 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressPageRoute(w http
 		return
 	}
 
-	pageHTML := createUpdateEmailAddressSetNewEmailAddressPageHTML(requestId, sessionToken, emailAddressUpdateToken)
+	pageTitle := "Set your new email address | Basic auth example"
+
+	bodyHTML := `<h1>Set your new email address</h1>
+<form id="set-new-email-address-form">
+	<label for="set-new-email-address-form-new-email-address-input">New email address</label>
+	<input id="set-new-email-address-form-new-email-address-input" name="new_email_address" type="email" autocomplete="username" required />
+	<button id="set-new-email-address-form-submit-button">Continue</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("email_address_update_token", emailAddressUpdateToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressSetNewEmailAddressPageScript, updateEmailAddressSetNewEmailAddressPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/update_email_address_verify_new_email_address.js
+var updateEmailAddressVerifyNewEmailAddressPageScript string
+
+//go:embed assets/update_email_address_verify_new_email_address.css
+var updateEmailAddressVerifyNewEmailAddressPageStylesheet string
 
 func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -1184,10 +1415,36 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w h
 		return
 	}
 
-	pageHTML := createUpdateEmailAddressVerifyNewEmailAddressPageHTML(requestId, sessionToken, emailAddressUpdateToken, emailAddressUpdate)
+	pageTitle := "Verify your new email address | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify your new email address</h1>
+<p>We sent an 8-digit verification code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
+<form id="verify-verification-code-form">
+	<label for="verify-verification-code-form-verification-code-input">Verification code (hyphens and spaces are optional)</label>
+	<input id="verify-verification-code-form-verification-code-input" name="verification_code" required />
+	<button id="verify-verification-code-form-submit-button">Update email address</button>
+</form>
+<div id="controls">
+	<button id="resend-verification-code-button" class="link-button">Resend verification code</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
+</div>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(emailAddressUpdate.newEmailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("email_address_update_token", emailAddressUpdateToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressVerifyNewEmailAddressPageScript, updateEmailAddressVerifyNewEmailAddressPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/delete_account_verify_password.js
+var deleteAccountVerifyPasswordPageScript string
+
+//go:embed assets/delete_account_verify_password.css
+var deleteAccountVerifyPasswordPageStylesheet string
 
 func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -1249,10 +1506,33 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.Re
 		return
 	}
 
-	pageHTML := createDeleteAccountVerifyPasswordPageHTML(requestId, sessionToken, accountDeletionToken, user)
+	pageTitle := "Verify your password | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify your password</h1>
+<form id="verify-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
+	<label for="verify-password-form-password-input">Password</label>
+	<input id="verify-password-form-password-input" name="password" type="password" autocomplete="current-password" required />
+	<button id="verify-password-form-submit-button">Continue</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("account_deletion_token", accountDeletionToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, deleteAccountVerifyPasswordPageScript, deleteAccountVerifyPasswordPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/delete_account_confirm.js
+var deleteAccountConfirmPageScript string
+
+//go:embed assets/delete_account_confirm.css
+var deleteAccountConfirmPageStylesheet string
 
 func (server *serverStruct) confirmAccountDeletionPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
@@ -1298,16 +1578,50 @@ func (server *serverStruct) confirmAccountDeletionPageRoute(w http.ResponseWrite
 		return
 	}
 
-	pageHTML := createDeleteAccountConfirmPageHTML(requestId, sessionToken, accountDeletionToken)
+	pageTitle := "Delete your account | Basic auth example"
+
+	bodyHTML := `<h1>Delete your account</h1>
+<p>Are you sure you want to delete your account? This action is permanent and cannot be undone.<p>
+<div id="controls">
+	<button id="confirm-button" class="block-button">Delete my account</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
+</div>`
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("session_token", sessionToken)
+	pageDataJSONBuilder.AddString("account_deletion_token", accountDeletionToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, deleteAccountConfirmPageScript, deleteAccountConfirmPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/reset_password.js
+var resetPasswordPageScript string
 
 func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, requestId string, clientIPAddress string) {
-	pageHTML := createResetPasswordPageHTML(requestId)
+
+	pageTitle := "Reset your password | Basic auth example"
+
+	bodyHTML := `<h1>Reset your password</h1>
+<p>Enter your account email address and we'll email you a password reset code.</p>
+<form id="reset-password-form">
+	<label for="reset-password-form-email-address-input">Email address (lowercase)</label>
+	<input id="reset-password-form-email-address-input" name="email_address" type="email" autocomplete="username" required />
+	<button id="reset-password-form-submit-button">Continue</button>
+</form>`
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordPageScript, "", "")
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/reset_password_verify_code.js
+var resetPasswordVerifyCodePageScript string
+
+//go:embed assets/reset_password_verify_code.css
+var resetPasswordVerifyCodePageStylesheet string
 
 func (server *serverStruct) verifyPasswordResetCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
@@ -1331,10 +1645,32 @@ func (server *serverStruct) verifyPasswordResetCodePageRoute(w http.ResponseWrit
 		return
 	}
 
-	pageHTML := createResetPasswordVerifyCodePageHTML(requestId, passwordResetToken, passwordReset.emailAddress)
+	pageTitle := "Verify password reset code | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify password reset code</h1>
+<p>We sent an 8-digit code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
+<form id="verify-code-form">
+	<label for="verify-code-form-code-input">Password reset code (hyphens and spaces are optional)</label>
+	<input id="verify-code-form-code-input" name="code" autocomplete="none" required />
+	<button id="verify-code-form-submit-button">Continue</button>
+</form>
+<button id="cancel-button" class="link-button">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(passwordReset.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("password_reset_token", passwordResetToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordVerifyCodePageScript, resetPasswordVerifyCodePageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
+
+//go:embed assets/reset_password_set_new_password.js
+var resetPasswordSetNewPasswordPageScript string
+
+//go:embed assets/reset_password_set_new_password.css
+var resetPasswordSetNewPasswordPageStylesheet string
 
 func (server *serverStruct) setPasswordResetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
@@ -1373,7 +1709,24 @@ func (server *serverStruct) setPasswordResetNewPasswordPageRoute(w http.Response
 		return
 	}
 
-	pageHTML := createResetPasswordSetNewPasswordPageHTML(requestId, passwordResetToken, user.emailAddress)
+	pageTitle := "Set your new password | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Set your new password</h1>
+<p>Use a strong password with at least 10 characters.</p>
+<form id="set-new-password-form">
+	<input name="email_address" autocomplete="username" value="%s" hidden />
+	<label for="set-new-password-form-new-password-input">New password</label>
+	<input id="set-new-password-form-new-password-input" name="new_password" type="password" autocomplete="new-password" required minlength="10" />
+	<button id="set-new-password-form-submit-button">Reset password</button>
+</form>
+<button id="cancel-button" class="link-button class="link-button"">Cancel</button>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(user.emailAddress))
+
+	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
+	pageDataJSONBuilder.AddString("password_reset_token", passwordResetToken)
+	pageDataJSON := pageDataJSONBuilder.Done()
+
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordSetNewPasswordPageScript, resetPasswordSetNewPasswordPageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
