@@ -16,23 +16,22 @@ import (
 )
 
 const (
-	routeAction                                      = "action"
 	routeHomePage                                    = "home_page"
 	routeAccountPage                                 = "account_page"
 	routeSignUpPage                                  = "sign_up_page"
-	routeVerifySignupEmailAddressPage                = "verify_signup_email_address_page"
-	routeSetSignupPasswordPage                       = "set_signup_password_page"
+	routeSignUpVerifyEmailAddressPage                = "sign_up_verify_email_address_page"
+	routeSignUpSetPasswordPage                       = "sign_up_set_password_page"
 	routeSignInPage                                  = "sign_in_page"
-	routeVerifyPasswordUpdateUserPasswordPage        = "verify_password_update_user_password_page"
-	routeSetPasswordUpdateNewPasswordPage            = "set_password_update_new_password_page"
-	routeVerifyEmailAddressUpdateUserPasswordPage    = "verify_email_address_update_user_password_page"
-	routeSetEmailAddressUpdateNewEmailAddressPage    = "set_email_address_update_new_email_address_page"
-	routeVerifyEmailAddressUpdateNewEmailAddressPage = "verify_email_address_update_new_email_address_page"
-	routeVerifyAccountDeletionUserPasswordPage       = "verify_account_deletion_user_password_page"
-	routeConfirmAccountDeletionPage                  = "confirm_account_deletion_page"
+	routeUpdatePasswordVerifyPasswordPage            = "update_password_verify_password_page"
+	routeUpdatePasswordSetNewPasswordPage            = "update_password_set_new_password_page"
+	routeUpdateEmailAddressVerifyPasswordPage        = "update_email_address_verify_password_page"
+	routeUpdateEmailAddressSetNewEmailAddressPage    = "update_email_address_set_new_email_address_page"
+	routeUpdateEmailAddressVerifyNewEmailAddressPage = "update_email_address_verify_new_email_address_page"
+	routeDeleteAccountVerifyPasswordPage             = "delete_account_verify_password_page"
+	routeDeleteAccountConfirmPage                    = "delete_account_confirm_page"
 	routeResetPasswordPage                           = "reset_password_page"
-	routeVerifyPasswordResetCodePage                 = "verify_password_reset_code_page"
-	routeSetPasswordResetNewPasswordPage             = "set_password_reset_new_password_page"
+	routeResetPasswordVerifyCodePage                 = "reset_password_verify_code_page"
+	routeResetPasswordSetNewPasswordPage             = "reset_password_set_new_password_page"
 )
 
 func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
@@ -864,7 +863,7 @@ var signUpVerifyEmailAddressPageScript string
 //go:embed assets/sign_up_verify_email_address.css
 var signUpVerifyEmailAddressPageStylesheet string
 
-func (server *serverStruct) verifySignupEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -873,7 +872,7 @@ func (server *serverStruct) verifySignupEmailAddressPageRoute(w http.ResponseWri
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifySignupEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpVerifyEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -888,7 +887,7 @@ func (server *serverStruct) verifySignupEmailAddressPageRoute(w http.ResponseWri
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifySignupEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpVerifyEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -930,7 +929,7 @@ var signUpSetPasswordPageScript string
 //go:embed assets/sign_up_set_password.css
 var signUpSetPasswordPageStylesheet string
 
-func (server *serverStruct) setSignupPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -939,7 +938,7 @@ func (server *serverStruct) setSignupPasswordPageRoute(w http.ResponseWriter, r 
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetSignupPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpSetPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -954,7 +953,7 @@ func (server *serverStruct) setSignupPasswordPageRoute(w http.ResponseWriter, r 
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetSignupPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpSetPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1035,7 +1034,7 @@ var updatePasswordVerifyPasswordPageScript string
 //go:embed assets/update_password_verify_password.css
 var updatePasswordVerifyPasswordPageStylesheet string
 
-func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1045,7 +1044,7 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.Res
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordUpdateUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1060,7 +1059,7 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.Res
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordUpdateUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1089,7 +1088,7 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.Res
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordUpdateUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1123,7 +1122,7 @@ var updatePasswordSetNewPasswordPageScript string
 //go:embed assets/update_password_set_new_password.css
 var updatePasswordSetNewPasswordPageStylesheet string
 
-func (server *serverStruct) setPasswordUpdateNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1133,7 +1132,7 @@ func (server *serverStruct) setPasswordUpdateNewPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordUpdateNewPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordSetNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1148,7 +1147,7 @@ func (server *serverStruct) setPasswordUpdateNewPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordUpdateNewPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordSetNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1194,7 +1193,7 @@ var updateEmailAddressVerifyPasswordPageScript string
 //go:embed assets/update_email_address_verify_password.css
 var updateEmailAddressVerifyPasswordPageStylesheet string
 
-func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1204,7 +1203,7 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1219,7 +1218,7 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1248,7 +1247,7 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1282,7 +1281,7 @@ var updateEmailAddressSetNewEmailAddressPageScript string
 //go:embed assets/update_email_address_set_new_email_address.css
 var updateEmailAddressSetNewEmailAddressPageStylesheet string
 
-func (server *serverStruct) setEmailAddressUpdateNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1292,7 +1291,7 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetEmailAddressUpdateNewEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressSetNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1307,7 +1306,7 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetEmailAddressUpdateNewEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressSetNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1357,7 +1356,7 @@ var updateEmailAddressVerifyNewEmailAddressPageScript string
 //go:embed assets/update_email_address_verify_new_email_address.css
 var updateEmailAddressVerifyNewEmailAddressPageStylesheet string
 
-func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1367,7 +1366,7 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w h
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateNewEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1382,7 +1381,7 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w h
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateNewEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1408,7 +1407,7 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w h
 
 	if !emailAddressUpdate.newEmailAddressVerificationCodeDefined {
 		errorMessage := "news email address verification code not defined"
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateNewEmailAddressPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyNewEmailAddressPage, errorMessage)
 		server.setBlankEmailAddressUpdateTokenCookie(w)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
@@ -1446,7 +1445,7 @@ var deleteAccountVerifyPasswordPageScript string
 //go:embed assets/delete_account_verify_password.css
 var deleteAccountVerifyPasswordPageStylesheet string
 
-func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1456,7 +1455,7 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.Re
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyAccountDeletionUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1471,7 +1470,7 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.Re
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyAccountDeletionUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1500,7 +1499,7 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.Re
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyAccountDeletionUserPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountVerifyPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1534,7 +1533,7 @@ var deleteAccountConfirmPageScript string
 //go:embed assets/delete_account_confirm.css
 var deleteAccountConfirmPageStylesheet string
 
-func (server *serverStruct) confirmAccountDeletionPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1544,7 +1543,7 @@ func (server *serverStruct) confirmAccountDeletionPageRoute(w http.ResponseWrite
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeConfirmAccountDeletionPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountConfirmPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1559,7 +1558,7 @@ func (server *serverStruct) confirmAccountDeletionPageRoute(w http.ResponseWrite
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeConfirmAccountDeletionPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountConfirmPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1623,7 +1622,7 @@ var resetPasswordVerifyCodePageScript string
 //go:embed assets/reset_password_verify_code.css
 var resetPasswordVerifyCodePageStylesheet string
 
-func (server *serverStruct) verifyPasswordResetCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		server.setBlankPasswordResetTokenCookie(w)
@@ -1633,7 +1632,7 @@ func (server *serverStruct) verifyPasswordResetCodePageRoute(w http.ResponseWrit
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordResetCodePage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordVerifyCodePage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1672,7 +1671,7 @@ var resetPasswordSetNewPasswordPageScript string
 //go:embed assets/reset_password_set_new_password.css
 var resetPasswordSetNewPasswordPageStylesheet string
 
-func (server *serverStruct) setPasswordResetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		server.setBlankPasswordResetTokenCookie(w)
@@ -1682,7 +1681,7 @@ func (server *serverStruct) setPasswordResetNewPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordResetNewPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordSetNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1703,7 +1702,7 @@ func (server *serverStruct) setPasswordResetNewPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get password reset user: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordResetNewPasswordPage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordSetNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return

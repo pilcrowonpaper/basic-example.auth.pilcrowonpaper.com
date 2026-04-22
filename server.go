@@ -150,13 +150,13 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// GET /sign-up/verify-email-address
 		if len(pathParts) == 2 && pathParts[1] == "verify-email-address" && r.Method == "GET" {
-			server.verifySignupEmailAddressPageRoute(w, r, requestId, clientIPAddress)
+			server.signUpVerifyEmailAddressPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /sign-up/set-password
 		if len(pathParts) == 2 && pathParts[1] == "set-password" && r.Method == "GET" {
-			server.setSignupPasswordPageRoute(w, r, requestId, clientIPAddress)
+			server.signUpSetPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -177,13 +177,13 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "update-password" {
 		// GET /update-password/verify-password
 		if len(pathParts) == 2 && pathParts[1] == "verify-password" && r.Method == "GET" {
-			server.verifyPasswordUpdateUserPasswordPageRoute(w, r, requestId, clientIPAddress)
+			server.updatePasswordVerifyPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /update-password/set-new-password
 		if len(pathParts) == 2 && pathParts[1] == "set-new-password" && r.Method == "GET" {
-			server.setPasswordUpdateNewPasswordPageRoute(w, r, requestId, clientIPAddress)
+			server.updatePasswordSetNewPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -192,19 +192,19 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "update-email-address" {
 		// GET /update-email-address/verify-password
 		if len(pathParts) == 2 && pathParts[1] == "verify-password" && r.Method == "GET" {
-			server.verifyEmailAddressUpdateUserPasswordPageRoute(w, r, requestId, clientIPAddress)
+			server.updateEmailAddressVerifyPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /update-email-address/set-new-email-address
 		if len(pathParts) == 2 && pathParts[1] == "set-new-email-address" && r.Method == "GET" {
-			server.setEmailAddressUpdateNewEmailAddressPageRoute(w, r, requestId, clientIPAddress)
+			server.updateEmailAddressSetNewEmailAddressPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /update-email-address/verify-new-email-address
 		if len(pathParts) == 2 && pathParts[1] == "verify-new-email-address" && r.Method == "GET" {
-			server.verifyEmailAddressUpdateNewEmailAddressPageRoute(w, r, requestId, clientIPAddress)
+			server.updateEmailAddressVerifyNewEmailAddressPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -213,13 +213,13 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "delete-account" {
 		// GET /delete-account/verify-password
 		if len(pathParts) == 2 && pathParts[1] == "verify-password" && r.Method == "GET" {
-			server.verifyAccountDeletionUserPasswordPageRoute(w, r, requestId, clientIPAddress)
+			server.deleteAccountVerifyPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /delete-account/confirm
 		if len(pathParts) == 2 && pathParts[1] == "confirm" && r.Method == "GET" {
-			server.confirmAccountDeletionPageRoute(w, r, requestId, clientIPAddress)
+			server.deleteAccountConfirmPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -234,13 +234,13 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// GET /reset-password/verify-code
 		if len(pathParts) == 2 && pathParts[1] == "verify-code" && r.Method == "GET" {
-			server.verifyPasswordResetCodePageRoute(w, r, requestId, clientIPAddress)
+			server.resetPasswordVerifyCodePageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /reset-password/set-new-password
 		if len(pathParts) == 2 && pathParts[1] == "set-new-password" && r.Method == "GET" {
-			server.setPasswordResetNewPasswordPageRoute(w, r, requestId, clientIPAddress)
+			server.resetPasswordSetNewPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
