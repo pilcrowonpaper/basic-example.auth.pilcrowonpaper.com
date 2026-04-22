@@ -13,6 +13,8 @@ CREATE TABLE session (
     created_at INTEGER NOT NULL
 ) STRICT;
 
+CREATE INDEX session_user_index ON session(user_id);
+
 CREATE TABLE signup (
     id TEXT NOT NULL PRIMARY KEY,
     secret_hash BLOB NOT NULL,
@@ -32,6 +34,8 @@ CREATE TABLE email_address_update (
     created_at INTEGER NOT NULL
 ) STRICT;
 
+CREATE INDEX email_address_update_session_id_index ON email_address_update(session_id);
+
 CREATE TABLE password_update (
     id TEXT NOT NULL PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
@@ -40,6 +44,8 @@ CREATE TABLE password_update (
     created_at INTEGER NOT NULL
 ) STRICT;
 
+CREATE INDEX password_update_session_id_index ON password_update(session_id);
+
 CREATE TABLE account_deletion (
     id TEXT NOT NULL PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
@@ -47,6 +53,8 @@ CREATE TABLE account_deletion (
     user_identity_verified INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL
 ) STRICT;
+
+CREATE INDEX account_deletion_session_id_index ON account_deletion(session_id);
 
 CREATE TABLE password_reset (
     id TEXT NOT NULL PRIMARY KEY,
@@ -58,3 +66,5 @@ CREATE TABLE password_reset (
     first_factor_verified INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL
 ) STRICT;
+
+CREATE INDEX password_reset_user_id_index ON password_reset(user_id);
