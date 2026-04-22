@@ -6,9 +6,10 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
-	"server/ratelimit"
 	"strings"
 	"time"
+
+	"github.com/pilcrowonpaper/basic-example.auth.pilcrowonpaper.com/ratelimit"
 
 	"golang.org/x/sync/semaphore"
 	"zombiezen.com/go/sqlite"
