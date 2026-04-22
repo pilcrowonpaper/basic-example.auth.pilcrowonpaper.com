@@ -29,12 +29,17 @@ const (
 	routeUpdateEmailAddressVerifyNewEmailAddressPage = "update_email_address_verify_new_email_address_page"
 	routeDeleteAccountVerifyPasswordPage             = "delete_account_verify_password_page"
 	routeDeleteAccountConfirmPage                    = "delete_account_confirm_page"
-	routeResetPasswordPage                           = "reset_password_page"
 	routeResetPasswordVerifyCodePage                 = "reset_password_verify_code_page"
 	routeResetPasswordSetNewPasswordPage             = "reset_password_set_new_password_page"
 )
 
 func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+	secFetchSite := r.Header.Get("Sec-Fetch-Site")
+	if secFetchSite != "same-origin" {
+		w.WriteHeader(403)
+		return
+	}
+
 	contentTypeHeader := r.Header.Get("Content-Type")
 	if contentTypeHeader != "" {
 		mediaType, mediaTypeParameters, err := mime.ParseMediaType(contentTypeHeader)
