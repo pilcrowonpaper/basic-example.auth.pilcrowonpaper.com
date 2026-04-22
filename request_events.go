@@ -31,34 +31,34 @@ const (
 	requestEventPasswordResetCompleted              = "password_reset_completed"
 )
 
-func (server *serverStruct) logSignupStartedRequestEvent(requestId string, signupId string, emailAddress string) {
+func (server *serverStruct) logSignupStartedRequestEvent(requestId string, clientIPAddress string, signupId string, emailAddress string) {
 	tags := requestEventTagsStruct{
 		signupId:     signupId,
 		emailAddress: emailAddress,
 	}
 
-	server.logRequestEvent(requestEventSignupStarted, requestId, tags)
+	server.logRequestEvent(requestEventSignupStarted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logSignupEmailAddressVerifiedRequestEvent(requestId string, signupId string, emailAddress string) {
+func (server *serverStruct) logSignupEmailAddressVerifiedRequestEvent(requestId string, clientIPAddress string, signupId string, emailAddress string) {
 	tags := requestEventTagsStruct{
 		signupId:     signupId,
 		emailAddress: emailAddress,
 	}
 
-	server.logRequestEvent(requestEventSignupEmailAddressVerified, requestId, tags)
+	server.logRequestEvent(requestEventSignupEmailAddressVerified, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logSignupEmailAddressVerificationFailedRequestEvent(requestId string, signupId string, emailAddress string) {
+func (server *serverStruct) logSignupEmailAddressVerificationFailedRequestEvent(requestId string, clientIPAddress string, signupId string, emailAddress string) {
 	tags := requestEventTagsStruct{
 		signupId:     signupId,
 		emailAddress: emailAddress,
 	}
 
-	server.logRequestEvent(requestEventSignupEmailAddressVerificationFailed, requestId, tags)
+	server.logRequestEvent(requestEventSignupEmailAddressVerificationFailed, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logSignupCompletedRequestEvent(requestId string, signupId string, emailAddress string, userId string, sessionId string) {
+func (server *serverStruct) logSignupCompletedRequestEvent(requestId string, clientIPAddress string, signupId string, emailAddress string, userId string, sessionId string) {
 	tags := requestEventTagsStruct{
 		signupId:     signupId,
 		emailAddress: emailAddress,
@@ -66,68 +66,57 @@ func (server *serverStruct) logSignupCompletedRequestEvent(requestId string, sig
 		sessionId:    sessionId,
 	}
 
-	server.logRequestEvent(requestEventSignupCompleted, requestId, tags)
+	server.logRequestEvent(requestEventSignupCompleted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logSignedInRequestEvent(requestId string, userId string, sessionId string) {
+func (server *serverStruct) logSignedInRequestEvent(requestId string, clientIPAddress string, userId string, sessionId string) {
 	tags := requestEventTagsStruct{
 		userId:    userId,
 		sessionId: sessionId,
 	}
 
-	server.logRequestEvent(requestEventSignedIn, requestId, tags)
+	server.logRequestEvent(requestEventSignedIn, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logSigninPasswordVerificationFailedRequestEvent(requestId string, userId string) {
+func (server *serverStruct) logSigninPasswordVerificationFailedRequestEvent(requestId string, clientIPAddress string, userId string) {
 	tags := requestEventTagsStruct{
 		userId: userId,
 	}
 
-	server.logRequestEvent(requestEventSignedIn, requestId, tags)
+	server.logRequestEvent(requestEventSignedIn, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logEmailAddressUpdateStartedRequestEvent(requestId string, sessionId string, userId string, emailAddressUpdateId string) {
+func (server *serverStruct) logEmailAddressUpdateStartedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, emailAddressUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:            sessionId,
 		userId:               userId,
 		emailAddressUpdateId: emailAddressUpdateId,
 	}
 
-	server.logRequestEvent(requestEventEmailAddressUpdateStarted, requestId, tags)
+	server.logRequestEvent(requestEventEmailAddressUpdateStarted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logEmailAddressUpdateUserPasswordVerifiedRequestEvent(requestId string, sessionId string, userId string, emailAddressUpdateId string) {
+func (server *serverStruct) logEmailAddressUpdateUserPasswordVerifiedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, emailAddressUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:            sessionId,
 		userId:               userId,
 		emailAddressUpdateId: emailAddressUpdateId,
 	}
 
-	server.logRequestEvent(requestEventEmailAddressUpdateUserPasswordVerified, requestId, tags)
+	server.logRequestEvent(requestEventEmailAddressUpdateUserPasswordVerified, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logEmailAddressUpdateUserPasswordVerificationFailedRequestEvent(requestId string, sessionId string, userId string, emailAddressUpdateId string) {
+func (server *serverStruct) logEmailAddressUpdateUserPasswordVerificationFailedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, emailAddressUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:            sessionId,
 		userId:               userId,
 		emailAddressUpdateId: emailAddressUpdateId,
 	}
 
-	server.logRequestEvent(requestEventEmailAddressUpdateUserPasswordVerificationFailed, requestId, tags)
+	server.logRequestEvent(requestEventEmailAddressUpdateUserPasswordVerificationFailed, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logEmailAddressUpdateCompletedRequestEvent(requestId string, sessionId string, userId string, emailAddressUpdateId string, newEmailAddress string) {
-	tags := requestEventTagsStruct{
-		sessionId:            sessionId,
-		userId:               userId,
-		emailAddressUpdateId: emailAddressUpdateId,
-		emailAddress:         newEmailAddress,
-	}
-
-	server.logRequestEvent(requestEventEmailAddressUpdateCompleted, requestId, tags)
-}
-
-func (server *serverStruct) logEmailAddressUpdateNewEmailAddressVerificationFailedRequestEvent(requestId string, sessionId string, userId string, emailAddressUpdateId string, newEmailAddress string) {
+func (server *serverStruct) logEmailAddressUpdateCompletedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, emailAddressUpdateId string, newEmailAddress string) {
 	tags := requestEventTagsStruct{
 		sessionId:            sessionId,
 		userId:               userId,
@@ -135,120 +124,131 @@ func (server *serverStruct) logEmailAddressUpdateNewEmailAddressVerificationFail
 		emailAddress:         newEmailAddress,
 	}
 
-	server.logRequestEvent(requestEventEmailAddressUpdateNewEmailAddressVerificationFailed, requestId, tags)
+	server.logRequestEvent(requestEventEmailAddressUpdateCompleted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordUpdateStartedRequestEvent(requestId string, sessionId string, userId string, passwordUpdateId string) {
+func (server *serverStruct) logEmailAddressUpdateNewEmailAddressVerificationFailedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, emailAddressUpdateId string, newEmailAddress string) {
+	tags := requestEventTagsStruct{
+		sessionId:            sessionId,
+		userId:               userId,
+		emailAddressUpdateId: emailAddressUpdateId,
+		emailAddress:         newEmailAddress,
+	}
+
+	server.logRequestEvent(requestEventEmailAddressUpdateNewEmailAddressVerificationFailed, requestId, clientIPAddress, tags)
+}
+
+func (server *serverStruct) logPasswordUpdateStartedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, passwordUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:        sessionId,
 		userId:           userId,
 		passwordUpdateId: passwordUpdateId,
 	}
 
-	server.logRequestEvent(requestEventPasswordUpdateStarted, requestId, tags)
+	server.logRequestEvent(requestEventPasswordUpdateStarted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordUpdateUserPasswordVerifiedRequestEvent(requestId string, sessionId string, userId string, passwordUpdateId string) {
+func (server *serverStruct) logPasswordUpdateUserPasswordVerifiedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, passwordUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:        sessionId,
 		userId:           userId,
 		passwordUpdateId: passwordUpdateId,
 	}
 
-	server.logRequestEvent(requestEventPasswordUpdateUserPasswordVerified, requestId, tags)
+	server.logRequestEvent(requestEventPasswordUpdateUserPasswordVerified, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordUpdateUserPasswordVerificationFailedRequestEvent(requestId string, sessionId string, userId string, passwordUpdateId string) {
+func (server *serverStruct) logPasswordUpdateUserPasswordVerificationFailedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, passwordUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:        sessionId,
 		userId:           userId,
 		passwordUpdateId: passwordUpdateId,
 	}
 
-	server.logRequestEvent(requestEventPasswordUpdateUserPasswordVerificationFailed, requestId, tags)
+	server.logRequestEvent(requestEventPasswordUpdateUserPasswordVerificationFailed, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordUpdateCompletedRequestEvent(requestId string, sessionId string, userId string, passwordUpdateId string) {
+func (server *serverStruct) logPasswordUpdateCompletedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, passwordUpdateId string) {
 	tags := requestEventTagsStruct{
 		sessionId:        sessionId,
 		userId:           userId,
 		passwordUpdateId: passwordUpdateId,
 	}
 
-	server.logRequestEvent(requestEventPasswordUpdateCompleted, requestId, tags)
+	server.logRequestEvent(requestEventPasswordUpdateCompleted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logAccountDeletionStartedRequestEvent(requestId string, sessionId string, userId string, accountDeletionId string) {
+func (server *serverStruct) logAccountDeletionStartedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, accountDeletionId string) {
 	tags := requestEventTagsStruct{
 		sessionId:         sessionId,
 		userId:            userId,
 		accountDeletionId: accountDeletionId,
 	}
 
-	server.logRequestEvent(requestEventAccountDeletionStarted, requestId, tags)
+	server.logRequestEvent(requestEventAccountDeletionStarted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logAccountDeletionUserPasswordVerifiedRequestEvent(requestId string, sessionId string, userId string, accountDeletionId string) {
+func (server *serverStruct) logAccountDeletionUserPasswordVerifiedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, accountDeletionId string) {
 	tags := requestEventTagsStruct{
 		sessionId:         sessionId,
 		userId:            userId,
 		accountDeletionId: accountDeletionId,
 	}
 
-	server.logRequestEvent(requestEventAccountDeletionUserPasswordVerified, requestId, tags)
+	server.logRequestEvent(requestEventAccountDeletionUserPasswordVerified, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logAccountDeletionUserPasswordVerificationFailedRequestEvent(requestId string, sessionId string, userId string, accountDeletionId string) {
+func (server *serverStruct) logAccountDeletionUserPasswordVerificationFailedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, accountDeletionId string) {
 	tags := requestEventTagsStruct{
 		sessionId:         sessionId,
 		userId:            userId,
 		accountDeletionId: accountDeletionId,
 	}
 
-	server.logRequestEvent(requestEventAccountDeletionUserPasswordVerificationFailed, requestId, tags)
+	server.logRequestEvent(requestEventAccountDeletionUserPasswordVerificationFailed, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logAccountDeletionCompletedRequestEvent(requestId string, sessionId string, userId string, accountDeletionId string) {
+func (server *serverStruct) logAccountDeletionCompletedRequestEvent(requestId string, clientIPAddress string, sessionId string, userId string, accountDeletionId string) {
 	tags := requestEventTagsStruct{
 		sessionId:         sessionId,
 		userId:            userId,
 		accountDeletionId: accountDeletionId,
 	}
 
-	server.logRequestEvent(requestEventAccountDeletionCompleted, requestId, tags)
+	server.logRequestEvent(requestEventAccountDeletionCompleted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordResetStartedRequestEvent(requestId string, passwordResetId string, userId string, emailAddress string) {
+func (server *serverStruct) logPasswordResetStartedRequestEvent(requestId string, clientIPAddress string, passwordResetId string, userId string, emailAddress string) {
 	tags := requestEventTagsStruct{
 		passwordResetId: passwordResetId,
 		userId:          userId,
 		emailAddress:    emailAddress,
 	}
 
-	server.logRequestEvent(requestEventPasswordResetStarted, requestId, tags)
+	server.logRequestEvent(requestEventPasswordResetStarted, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordResetCodeVerifiedRequestEvent(requestId string, passwordResetId string, userId string, emailAddress string) {
+func (server *serverStruct) logPasswordResetCodeVerifiedRequestEvent(requestId string, clientIPAddress string, passwordResetId string, userId string, emailAddress string) {
 	tags := requestEventTagsStruct{
 		passwordResetId: passwordResetId,
 		userId:          userId,
 		emailAddress:    emailAddress,
 	}
 
-	server.logRequestEvent(requestEventPasswordResetCodeVerified, requestId, tags)
+	server.logRequestEvent(requestEventPasswordResetCodeVerified, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordResetCodeVerificationFailedRequestEvent(requestId string, passwordResetId string, userId string, emailAddress string) {
+func (server *serverStruct) logPasswordResetCodeVerificationFailedRequestEvent(requestId string, clientIPAddress string, passwordResetId string, userId string, emailAddress string) {
 	tags := requestEventTagsStruct{
 		passwordResetId: passwordResetId,
 		userId:          userId,
 		emailAddress:    emailAddress,
 	}
 
-	server.logRequestEvent(requestEventPasswordResetCodeVerificationFailed, requestId, tags)
+	server.logRequestEvent(requestEventPasswordResetCodeVerificationFailed, requestId, clientIPAddress, tags)
 }
 
-func (server *serverStruct) logPasswordResetCompletedRequestEvent(requestId string, passwordResetId string, userId string, emailAddress string, sessionId string) {
+func (server *serverStruct) logPasswordResetCompletedRequestEvent(requestId string, clientIPAddress string, passwordResetId string, userId string, emailAddress string, sessionId string) {
 	tags := requestEventTagsStruct{
 		passwordResetId: passwordResetId,
 		userId:          userId,
@@ -256,5 +256,5 @@ func (server *serverStruct) logPasswordResetCompletedRequestEvent(requestId stri
 		sessionId:       sessionId,
 	}
 
-	server.logRequestEvent(requestEventPasswordResetCompleted, requestId, tags)
+	server.logRequestEvent(requestEventPasswordResetCompleted, requestId, clientIPAddress, tags)
 }

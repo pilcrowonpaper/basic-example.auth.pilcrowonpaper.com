@@ -12,7 +12,27 @@ import (
 	"github.com/pilcrowonpaper/go-json"
 )
 
-func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+const (
+	routeAction                                      = "action"
+	routeHomePage                                    = "home_page"
+	routeAccountPage                                 = "account_page"
+	routeSignUpPage                                  = "sign_up_page"
+	routeVerifySignupEmailAddressPage                = "verify_signup_email_address_page"
+	routeSetSignupPasswordPage                       = "set_signup_password_page"
+	routeSignInPage                                  = "sign_in_page"
+	routeVerifyPasswordUpdateUserPasswordPage        = "verify_password_update_user_password_page"
+	routeSetPasswordUpdateNewPasswordPage            = "set_password_update_new_password_page"
+	routeVerifyEmailAddressUpdateUserPasswordPage    = "verify_email_address_update_user_password_page"
+	routeSetEmailAddressUpdateNewEmailAddressPage    = "set_email_address_update_new_email_address_page"
+	routeVerifyEmailAddressUpdateNewEmailAddressPage = "verify_email_address_update_new_email_address_page"
+	routeVerifyAccountDeletionUserPasswordPage       = "verify_account_deletion_user_password_page"
+	routeConfirmAccountDeletionPage                  = "confirm_account_deletion_page"
+	routeResetPasswordPage                           = "reset_password_page"
+	routeVerifyPasswordResetCodePage                 = "verify_password_reset_code_page"
+	routeSetPasswordResetNewPasswordPage             = "set_password_reset_new_password_page"
+)
+
+func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	contentTypeHeader := r.Header.Get("Content-Type")
 	if contentTypeHeader != "" {
 		mediaType, mediaTypeParameters, err := mime.ParseMediaType(contentTypeHeader)
@@ -60,13 +80,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		signupToken, errorCode := server.startSignupAction(requestId, emailAddress)
+		signupToken, errorCode := server.startSignupAction(requestId, clientIPAddress, emailAddress)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionStartSignup, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionStartSignup, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionStartSignup)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionStartSignup)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("signup_token", signupToken)
@@ -81,13 +101,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.cancelSignupAction(requestId, signupToken)
+		errorCode := server.cancelSignupAction(requestId, clientIPAddress, signupToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCancelSignup, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionCancelSignup, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCancelSignup)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelSignup)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -99,13 +119,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.sendSignupEmailAddressVerificationCodeAction(requestId, signupToken)
+		errorCode := server.sendSignupEmailAddressVerificationCodeAction(requestId, clientIPAddress, signupToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSendSignupEmailAddressVerificationCode, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSendSignupEmailAddressVerificationCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSendSignupEmailAddressVerificationCode)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSendSignupEmailAddressVerificationCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -122,13 +142,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifySignupEmailAddressVerificationCodeAction(requestId, signupToken, verificationCode)
+		errorCode := server.verifySignupEmailAddressVerificationCodeAction(requestId, clientIPAddress, signupToken, verificationCode)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifySignupEmailAddressVerificationCode, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifySignupEmailAddressVerificationCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifySignupEmailAddressVerificationCode)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifySignupEmailAddressVerificationCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -145,13 +165,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		sessionToken, errorCode := server.setSignupPasswordAction(requestId, signupToken, password)
+		sessionToken, errorCode := server.setSignupPasswordAction(requestId, clientIPAddress, signupToken, password)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSetSignupPassword, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSetSignupPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSetSignupPassword)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSetSignupPassword)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("session_token", sessionToken)
@@ -171,13 +191,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		sessionToken, errorCode := server.signInAction(requestId, emailAddress, password)
+		sessionToken, errorCode := server.signInAction(requestId, clientIPAddress, emailAddress, password)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSignIn, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSignIn, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSignIn)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSignIn)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("session_token", sessionToken)
@@ -192,13 +212,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.signOutAction(requestId, sessionToken)
+		errorCode := server.signOutAction(requestId, clientIPAddress, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSignOut, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSignOut, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSignOut)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSignOut)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -210,13 +230,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.signOutAllDevicesAction(requestId, sessionToken)
+		errorCode := server.signOutAllDevicesAction(requestId, clientIPAddress, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSignOutAllDevices, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSignOutAllDevices, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSignOutAllDevices)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSignOutAllDevices)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -228,13 +248,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		passwordUpdateToken, errorCode := server.startPasswordUpdateAction(requestId, sessionToken)
+		passwordUpdateToken, errorCode := server.startPasswordUpdateAction(requestId, clientIPAddress, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionStartPasswordUpdate, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionStartPasswordUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionStartPasswordUpdate)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionStartPasswordUpdate)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("password_update_token", passwordUpdateToken)
@@ -254,13 +274,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.cancelPasswordUpdateAction(requestId, sessionToken, passwordUpdateToken)
+		errorCode := server.cancelPasswordUpdateAction(requestId, clientIPAddress, sessionToken, passwordUpdateToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCancelPasswordUpdate, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionCancelPasswordUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCancelPasswordUpdate)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelPasswordUpdate)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -282,17 +302,17 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyPasswordUpdateUserPasswordAction(requestId, sessionToken, passwordUpdateToken, password)
+		errorCode := server.verifyPasswordUpdateUserPasswordAction(requestId, clientIPAddress, sessionToken, passwordUpdateToken, password)
 		if errorCode != "" {
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifyPasswordUpdateUserPassword, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyPasswordUpdateUserPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifyPasswordUpdateUserPassword)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyPasswordUpdateUserPassword)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -314,13 +334,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.setPasswordUpdateNewPasswordAction(requestId, sessionToken, passwordUpdateToken, newPassword)
+		errorCode := server.setPasswordUpdateNewPasswordAction(requestId, clientIPAddress, sessionToken, passwordUpdateToken, newPassword)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSetPasswordUpdateNewPassword, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSetPasswordUpdateNewPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSetPasswordUpdateNewPassword)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSetPasswordUpdateNewPassword)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -332,13 +352,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		emailAddressUpdateToken, errorCode := server.startEmailAddressUpdateAction(requestId, sessionToken)
+		emailAddressUpdateToken, errorCode := server.startEmailAddressUpdateAction(requestId, clientIPAddress, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionStartEmailAddressUpdate, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionStartEmailAddressUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionStartEmailAddressUpdate)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionStartEmailAddressUpdate)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("email_address_update_token", emailAddressUpdateToken)
@@ -358,13 +378,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.cancelEmailAddressUpdateAction(requestId, sessionToken, emailAddressUpdateToken)
+		errorCode := server.cancelEmailAddressUpdateAction(requestId, clientIPAddress, sessionToken, emailAddressUpdateToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCancelEmailAddressUpdate, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionCancelEmailAddressUpdate, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCancelEmailAddressUpdate)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelEmailAddressUpdate)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -386,13 +406,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyEmailAddressUpdateUserPasswordAction(requestId, sessionToken, emailAddressUpdateToken, password)
+		errorCode := server.verifyEmailAddressUpdateUserPasswordAction(requestId, clientIPAddress, sessionToken, emailAddressUpdateToken, password)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifyEmailAddressUpdateUserPassword, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyEmailAddressUpdateUserPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifyEmailAddressUpdateUserPassword)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyEmailAddressUpdateUserPassword)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -414,13 +434,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.setEmailAddressUpdateNewEmailAddressAction(requestId, sessionToken, emailAddressUpdateToken, newEmailAddress)
+		errorCode := server.setEmailAddressUpdateNewEmailAddressAction(requestId, clientIPAddress, sessionToken, emailAddressUpdateToken, newEmailAddress)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSetEmailAddressUpdateNewEmailAddress, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSetEmailAddressUpdateNewEmailAddress, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSetEmailAddressUpdateNewEmailAddress)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSetEmailAddressUpdateNewEmailAddress)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -437,13 +457,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.sendEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId, sessionToken, emailAddressUpdateToken)
+		errorCode := server.sendEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId, clientIPAddress, sessionToken, emailAddressUpdateToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSendEmailAddressUpdateNewEmailAddressVerificationCode, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSendEmailAddressUpdateNewEmailAddressVerificationCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSendEmailAddressUpdateNewEmailAddressVerificationCode)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSendEmailAddressUpdateNewEmailAddressVerificationCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -465,13 +485,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId, sessionToken, emailAddressUpdateToken, verificationCode)
+		errorCode := server.verifyEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId, clientIPAddress, sessionToken, emailAddressUpdateToken, verificationCode)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -483,13 +503,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		accountDeletionToken, errorCode := server.startAccountDeletionAction(requestId, sessionToken)
+		accountDeletionToken, errorCode := server.startAccountDeletionAction(requestId, clientIPAddress, sessionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionStartAccountDeletion, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionStartAccountDeletion, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionStartAccountDeletion)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionStartAccountDeletion)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("account_deletion_token", accountDeletionToken)
@@ -509,13 +529,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.cancelAccountDeletionAction(requestId, sessionToken, accountDeletionToken)
+		errorCode := server.cancelAccountDeletionAction(requestId, clientIPAddress, sessionToken, accountDeletionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCancelAccountDeletion, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionCancelAccountDeletion, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCancelAccountDeletion)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelAccountDeletion)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -537,13 +557,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyAccountDeletionUserPasswordAction(requestId, sessionToken, accountDeletionToken, password)
+		errorCode := server.verifyAccountDeletionUserPasswordAction(requestId, clientIPAddress, sessionToken, accountDeletionToken, password)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifyAccountDeletionUserPassword, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyAccountDeletionUserPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifyAccountDeletionUserPassword)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyAccountDeletionUserPassword)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -560,13 +580,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.confirmAccountDeletionAction(requestId, sessionToken, accountDeletionToken)
+		errorCode := server.confirmAccountDeletionAction(requestId, clientIPAddress, sessionToken, accountDeletionToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionConfirmAccountDeletion, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionConfirmAccountDeletion, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionConfirmAccountDeletion)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionConfirmAccountDeletion)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -578,13 +598,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		passwordResetToken, errorCode := server.startPasswordResetAction(requestId, emailAddress)
+		passwordResetToken, errorCode := server.startPasswordResetAction(requestId, clientIPAddress, emailAddress)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionStartPasswordReset, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionStartPasswordReset, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionStartPasswordReset)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionStartPasswordReset)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("password_reset_token", passwordResetToken)
@@ -599,13 +619,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.cancelPasswordResetAction(requestId, passwordResetToken)
+		errorCode := server.cancelPasswordResetAction(requestId, clientIPAddress, passwordResetToken)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionCancelPasswordReset, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionCancelPasswordReset, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionCancelPasswordReset)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelPasswordReset)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -622,13 +642,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyPasswordResetCode(requestId, passwordResetToken, code)
+		errorCode := server.verifyPasswordResetCodeAction(requestId, clientIPAddress, passwordResetToken, code)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionVerifyPasswordResetCode, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyPasswordResetCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionVerifyPasswordResetCode)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyPasswordResetCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -645,13 +665,13 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 			w.WriteHeader(400)
 			return
 		}
-		sessionToken, errorCode := server.setPasswordResetNewPasswordAction(requestId, passwordResetToken, newPassword)
+		sessionToken, errorCode := server.setPasswordResetNewPasswordAction(requestId, clientIPAddress, passwordResetToken, newPassword)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, actionSetPasswordResetNewPassword, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionSetPasswordResetNewPassword, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, actionSetPasswordResetNewPassword)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionSetPasswordResetNewPassword)
 
 		resultValuesJSONBuilder := json.NewObjectBuilder(json.MinimalStringCharacterEscapingBehavior)
 		resultValuesJSONBuilder.AddString("session_token", sessionToken)
@@ -695,7 +715,7 @@ func writeActionSuccessResult(w http.ResponseWriter, requestId string, valuesJSO
 	w.Write(bodyJSONBytes)
 }
 
-func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -704,7 +724,7 @@ func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeHomePage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -715,7 +735,7 @@ func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -725,7 +745,7 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeAccountPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -740,7 +760,7 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeAccountPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -751,7 +771,7 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -760,7 +780,7 @@ func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Reque
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -771,7 +791,7 @@ func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Reque
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) verifySignupEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -780,7 +800,7 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifySignupEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -795,7 +815,7 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifySignupEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -812,7 +832,7 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) setSignupPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -821,7 +841,7 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetSignupPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -836,7 +856,7 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetSignupPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -853,7 +873,7 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	_, _, err := server.validateRequestSessionToken(r)
 	if err == nil {
 		w.Header().Set("Location", "/account")
@@ -862,7 +882,7 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 	}
 	if !errors.Is(err, errInvalidSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSignInPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -873,7 +893,7 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) verifyPasswordUpdateUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -883,7 +903,7 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordUpdateUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -898,7 +918,7 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordUpdateUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -927,7 +947,7 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordUpdateUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -938,7 +958,7 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) setPasswordUpdateNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -948,7 +968,7 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordUpdateNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -963,7 +983,7 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordUpdateNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -987,7 +1007,7 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) verifyEmailAddressUpdateUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -997,7 +1017,7 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1012,7 +1032,7 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1041,7 +1061,7 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1052,7 +1072,7 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) setEmailAddressUpdateNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1062,7 +1082,7 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetEmailAddressUpdateNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1077,7 +1097,7 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetEmailAddressUpdateNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1106,7 +1126,7 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1116,7 +1136,7 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1131,7 +1151,7 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateNewEmailAddressPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1157,7 +1177,7 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 
 	if !emailAddressUpdate.newEmailAddressVerificationCodeDefined {
 		errorMessage := "news email address verification code not defined"
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyEmailAddressUpdateNewEmailAddressPage, errorMessage)
 		server.setBlankEmailAddressUpdateTokenCookie(w)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
@@ -1169,7 +1189,7 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) verifyAccountDeletionUserPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1179,7 +1199,7 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyAccountDeletionUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1194,7 +1214,7 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyAccountDeletionUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1223,7 +1243,7 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyAccountDeletionUserPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1234,7 +1254,7 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) confirmAccountDeletionPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	session, sessionToken, err := server.validateRequestSessionToken(r)
 	if errors.Is(err, errInvalidSessionToken) {
 		server.setBlankSessionTokenCookie(w)
@@ -1244,7 +1264,7 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request session token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeConfirmAccountDeletionPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1259,7 +1279,7 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeConfirmAccountDeletionPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1283,13 +1303,13 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, _ *http.Request, requestId string) {
+func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, requestId string, clientIPAddress string) {
 	pageHTML := createResetPasswordPageHTML(requestId)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) verifyPasswordResetCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		server.setBlankPasswordResetTokenCookie(w)
@@ -1299,7 +1319,7 @@ func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWrit
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeVerifyPasswordResetCodePage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1316,7 +1336,7 @@ func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWrit
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string) {
+func (server *serverStruct) setPasswordResetNewPasswordPageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		server.setBlankPasswordResetTokenCookie(w)
@@ -1326,7 +1346,7 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordResetNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1347,7 +1367,7 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get password reset user: %s", err.Error())
-		server.logActionError(requestId, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeSetPasswordResetNewPasswordPage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return

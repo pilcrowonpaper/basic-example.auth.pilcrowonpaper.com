@@ -33,7 +33,7 @@ type serverStruct struct {
 }
 
 type serverLoggingStruct struct {
-	actionError   bool
+	internalError bool
 	backgroundJob bool
 	actionResult  bool
 	requestEmail  bool
@@ -136,7 +136,7 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// GET /
 	if len(pathParts) == 0 && r.Method == "GET" {
-		server.homePageRoute(w, r, requestId)
+		server.homePageRoute(w, r, requestId, clientIPAddress)
 		return
 	}
 
@@ -144,32 +144,32 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "sign-up" {
 		// GET /sign-up
 		if len(pathParts) == 1 && r.Method == "GET" {
-			server.signUpPageRoute(w, r, requestId)
+			server.signUpPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /sign-up/verify-email-address
 		if len(pathParts) == 2 && pathParts[1] == "verify-email-address" && r.Method == "GET" {
-			server.signUpVerifyEmailAddressPageRoute(w, r, requestId)
+			server.verifySignupEmailAddressPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /sign-up/set-password
 		if len(pathParts) == 2 && pathParts[1] == "set-password" && r.Method == "GET" {
-			server.signUpSetPasswordPageRoute(w, r, requestId)
+			server.setSignupPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
 
 	// GET /sign-in
 	if len(pathParts) == 1 && pathParts[0] == "sign-in" && r.Method == "GET" {
-		server.signInPageRoute(w, r, requestId)
+		server.signInPageRoute(w, r, requestId, clientIPAddress)
 		return
 	}
 
 	// GET /account
 	if len(pathParts) == 1 && pathParts[0] == "account" && r.Method == "GET" {
-		server.accountPageRoute(w, r, requestId)
+		server.accountPageRoute(w, r, requestId, clientIPAddress)
 		return
 	}
 
@@ -177,13 +177,13 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "update-password" {
 		// GET /update-password/verify-password
 		if len(pathParts) == 2 && pathParts[1] == "verify-password" && r.Method == "GET" {
-			server.updatePasswordVerifyPasswordPageRoute(w, r, requestId)
+			server.verifyPasswordUpdateUserPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /update-password/set-new-password
 		if len(pathParts) == 2 && pathParts[1] == "set-new-password" && r.Method == "GET" {
-			server.updatePasswordSetNewPasswordPageRoute(w, r, requestId)
+			server.setPasswordUpdateNewPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -192,19 +192,19 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "update-email-address" {
 		// GET /update-email-address/verify-password
 		if len(pathParts) == 2 && pathParts[1] == "verify-password" && r.Method == "GET" {
-			server.updateEmailAddressVerifyPasswordPageRoute(w, r, requestId)
+			server.verifyEmailAddressUpdateUserPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /update-email-address/set-new-email-address
 		if len(pathParts) == 2 && pathParts[1] == "set-new-email-address" && r.Method == "GET" {
-			server.updateEmailAddressSetNewEmailAddressPageRoute(w, r, requestId)
+			server.setEmailAddressUpdateNewEmailAddressPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /update-email-address/verify-new-email-address
 		if len(pathParts) == 2 && pathParts[1] == "verify-new-email-address" && r.Method == "GET" {
-			server.updateEmailAddressVerifyNewEmailAddressPageRoute(w, r, requestId)
+			server.verifyEmailAddressUpdateNewEmailAddressPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -213,13 +213,13 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "delete-account" {
 		// GET /delete-account/verify-password
 		if len(pathParts) == 2 && pathParts[1] == "verify-password" && r.Method == "GET" {
-			server.deleteAccountVerifyPasswordPageRoute(w, r, requestId)
+			server.verifyAccountDeletionUserPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /delete-account/confirm
 		if len(pathParts) == 2 && pathParts[1] == "confirm" && r.Method == "GET" {
-			server.deleteAccountConfirmPageRoute(w, r, requestId)
+			server.confirmAccountDeletionPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
@@ -228,26 +228,26 @@ func (server *serverStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(pathParts) > 0 && pathParts[0] == "reset-password" {
 		// GET /reset-password
 		if len(pathParts) == 1 && r.Method == "GET" {
-			server.resetPasswordPageRoute(w, r, requestId)
+			server.resetPasswordPageRoute(w, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /reset-password/verify-code
 		if len(pathParts) == 2 && pathParts[1] == "verify-code" && r.Method == "GET" {
-			server.resetPasswordVerifyCodePageRoute(w, r, requestId)
+			server.verifyPasswordResetCodePageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 
 		// GET /reset-password/set-new-password
 		if len(pathParts) == 2 && pathParts[1] == "set-new-password" && r.Method == "GET" {
-			server.resetPasswordSetNewPasswordPageRoute(w, r, requestId)
+			server.setPasswordResetNewPasswordPageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 	}
 
 	// POST /action
 	if len(pathParts) == 1 && pathParts[0] == "action" && r.Method == "POST" {
-		server.actionRoute(w, r, requestId)
+		server.actionRoute(w, r, requestId, clientIPAddress)
 		return
 	}
 
