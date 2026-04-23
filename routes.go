@@ -700,6 +700,7 @@ func writeActionErrorResult(w http.ResponseWriter, requestId string, errorCode s
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Content-Length", strconv.Itoa(len(bodyJSONBytes)))
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	w.WriteHeader(200)
 
@@ -716,6 +717,7 @@ func writeActionSuccessResult(w http.ResponseWriter, requestId string, valuesJSO
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Content-Length", strconv.Itoa(len(bodyJSONBytes)))
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	w.WriteHeader(200)
 
@@ -1740,6 +1742,7 @@ func writePageHTMLResponse(w http.ResponseWriter, statusCode int, pageHTML strin
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Length", strconv.Itoa(len(pageHTMLBytes)))
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.WriteHeader(statusCode)
 	w.Write(pageHTMLBytes)
 }
