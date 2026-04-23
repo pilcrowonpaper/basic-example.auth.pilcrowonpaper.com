@@ -123,7 +123,7 @@ cancelButtonElement.addEventListener("click", async () => {
 					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
 				clientStateEventChannel.postMessage("password_reset_updated");
-				
+
 				alert("Your session has expired.");
 				window.location.href = "/reset-password";
 				return;
@@ -141,7 +141,7 @@ cancelButtonElement.addEventListener("click", async () => {
 		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 	} else {
 		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
-		}
+	}
 	clientStateEventChannel.postMessage("password_reset_updated");
 
 	window.location.href = "/reset-password";

@@ -34,7 +34,7 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
-	
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
@@ -142,7 +142,7 @@ cancelButtonElement.addEventListener("click", async () => {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
 				clientStateEventChannel.postMessage("account_deletion_updated");
-				
+
 				alert("Your session has expired.");
 				window.location.href = "/account";
 				return;

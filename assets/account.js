@@ -158,7 +158,7 @@ signOutButtonElement.addEventListener("click", async () => {
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
-	
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {

@@ -34,7 +34,7 @@ document.getElementById("set-new-email-address-form").addEventListener("submit",
 		body: requestBody,
 	});
 	request.headers.set("Content-Type", "application/json");
-	
+
 	try {
 		const response = await fetch(request);
 		if (!response.ok) {
