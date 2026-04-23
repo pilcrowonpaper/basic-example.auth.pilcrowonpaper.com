@@ -46,8 +46,6 @@ type serverFlagsStruct struct {
 }
 
 func createServer(emailClient emailClientInterface, flags serverFlagsStruct, logging serverLoggingStruct) (*serverStruct, error) {
-	databaseFilename := "main.db"
-
 	databaseReadConnectionPool, err := sqlitex.NewPool(databaseFilename, sqlitex.PoolOptions{
 		Flags:    sqlite.OpenReadWrite | sqlite.OpenWAL,
 		PoolSize: runtime.NumCPU(),
