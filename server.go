@@ -82,7 +82,7 @@ func createServer(emailClient emailClientInterface, flags serverFlagsStruct, log
 	emailAddressVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
 	userPasswordResetCodeVerificationRateLimit := ratelimit.NewLimit(1_000, 5, time.Minute)
 	emailRateLimit := ratelimit.NewLimit(1_000, 5, 30*time.Minute)
-	requestRateLimit := ratelimit.NewLimit(1_000, 100, time.Second)
+	requestRateLimit := ratelimit.NewLimit(10_000, 100, time.Second)
 
 	server := &serverStruct{
 		emailClient:                                emailClient,
