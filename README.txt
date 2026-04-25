@@ -24,3 +24,8 @@ You can run the server locally with:
 All routes and pages are defined in the routes.go file, and APIs are defined in the actions.go file as RPC-like function referred to as "actions."
 
 This project is NOT open to outside contributions. Please file bug reports to the repository's issue tracker. Please email security issues to the security email address listed above. Note that I do not consider user enumerations to be a vulnerability for this website.
+
+I also maintain a passwordless example that implements email code sign-in and passkeys.
+
+Website: passwordless-example.auth.pilcrowonpaper.com
+Repository: github.com/pilcrowonpaper/passwordless-example.auth.pilcrowonpaper.com
