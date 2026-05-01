@@ -1278,12 +1278,12 @@ func (server *serverStruct) cancelPasswordResetAction(requestId string, clientIP
 
 func (server *serverStruct) verifyPasswordResetCodeAction(requestId string, clientIPAddress string, passwordResetToken string, code string) string {
 	const (
-		errorCodeInvalidPasswordResetToken  = "invalid_password_reset_token"
-		errorCodeFirstFactorAlreadyVerified = "first_factor_already_verified"
-		errorCodeIncorrectCode              = "incorrect_code"
-		errorCodeRateLimited                = "rate_limited"
-		errorCodeConflict                   = "conflict"
-		errorCodeUnexpectedError            = "unexpected_error"
+		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_token"
+		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
+		errorCodeIncorrectCode               = "incorrect_code"
+		errorCodeRateLimited                 = "rate_limited"
+		errorCodeConflict                    = "conflict"
+		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
 	passwordReset, err := server.validatePasswordResetToken(passwordResetToken)
@@ -1296,8 +1296,8 @@ func (server *serverStruct) verifyPasswordResetCodeAction(requestId string, clie
 		return errorCodeUnexpectedError
 	}
 
-	if passwordReset.firstFactorVerified {
-		return errorCodeFirstFactorAlreadyVerified
+	if passwordReset.userIdentityVerified {
+		return errorCodeUserIdentityAlreadyVerified
 	}
 
 	rateLimitAllowed := server.userPasswordResetCodeVerificationRateLimit.Consume(passwordReset.userId)
@@ -1314,9 +1314,9 @@ func (server *serverStruct) verifyPasswordResetCodeAction(requestId string, clie
 
 	server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, passwordReset.emailAddress)
 
-	err = server.setPasswordResetAsFirstFactorVerified(passwordReset.id)
+	err = server.setPasswordResetAsUserIdentityVerified(passwordReset.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set password reset as first factor verified: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set password reset as user identity verified: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -1344,7 +1344,7 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeUnexpectedError
 	}
 
-	if !passwordReset.firstFactorVerified {
+	if !passwordReset.userIdentityVerified {
 		return "", errorCodeVerificationCodeNotVerified
 	}
 

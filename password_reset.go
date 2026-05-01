@@ -18,14 +18,14 @@ import (
 )
 
 type passwordResetStruct struct {
-	id                  string
-	userId              string
-	secretHash          []byte
-	emailAddress        string
-	codeHash            []byte
-	codeSalt            []byte
-	firstFactorVerified bool
-	createdAt           time.Time
+	id                   string
+	userId               string
+	secretHash           []byte
+	emailAddress         string
+	codeHash             []byte
+	codeSalt             []byte
+	userIdentityVerified bool
+	createdAt            time.Time
 }
 
 func (passwordReset *passwordResetStruct) compareSecretAgainstHash(secret []byte) bool {
@@ -134,7 +134,7 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 	}
 	err = sqlitex.Execute(
 		databaseReadConnection,
-		"SELECT user_id, secret_hash, email_address, code_hash, code_salt, first_factor_verified, created_at FROM password_reset WHERE id = ?",
+		"SELECT user_id, secret_hash, email_address, code_hash, code_salt, user_identity_verified, created_at FROM password_reset WHERE id = ?",
 		&sqlitex.ExecOptions{
 			Args: []any{passwordResetId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -151,19 +151,19 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 				codeSalt := make([]byte, stmt.ColumnLen(4))
 				stmt.ColumnBytes(4, codeSalt)
 
-				firstFactorVerified := stmt.ColumnBool(5)
+				userIdentityVerified := stmt.ColumnBool(5)
 
 				createdAt := time.Unix(stmt.ColumnInt64(6), 0)
 
 				passwordReset := passwordResetStruct{
-					id:                  passwordResetId,
-					userId:              userId,
-					secretHash:          secretHash,
-					emailAddress:        emailAddress,
-					codeHash:            codeHash,
-					codeSalt:            codeSalt,
-					firstFactorVerified: firstFactorVerified,
-					createdAt:           createdAt,
+					id:                   passwordResetId,
+					userId:               userId,
+					secretHash:           secretHash,
+					emailAddress:         emailAddress,
+					codeHash:             codeHash,
+					codeSalt:             codeSalt,
+					userIdentityVerified: userIdentityVerified,
+					createdAt:            createdAt,
 				}
 
 				passwordResets = append(passwordResets, passwordReset)
@@ -237,12 +237,12 @@ func (server *serverStruct) validateRequestPasswordResetToken(r *http.Request) (
 	return passwordReset, passwordResetToken, nil
 }
 
-func (server *serverStruct) setPasswordResetAsFirstFactorVerified(passwordResetId string) error {
+func (server *serverStruct) setPasswordResetAsUserIdentityVerified(passwordResetId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE password_reset SET first_factor_verified = 1 WHERE id = ? AND first_factor_verified = 0", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE password_reset SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{passwordResetId},
 	})
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -274,7 +274,7 @@ func (server *serverStruct) completePasswordReset(passwordResetId string, newUse
 	}
 
 	userIds := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET password_hash = ?, password_salt = ? FROM password_reset WHERE user.id = password_reset.user_id AND password_reset.id = ? AND password_reset.first_factor_verified = 1 RETURNING user.id", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE user SET password_hash = ?, password_salt = ? FROM password_reset WHERE user.id = password_reset.user_id AND password_reset.id = ? AND password_reset.user_identity_verified = 1 RETURNING user.id", &sqlitex.ExecOptions{
 		Args: []any{newUserPasswordHash, newUserPasswordSalt, passwordResetId},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			userId := stmt.ColumnText(0)

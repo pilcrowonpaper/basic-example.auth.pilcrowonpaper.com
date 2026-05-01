@@ -1649,7 +1649,7 @@ func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWrit
 		return
 	}
 
-	if passwordReset.firstFactorVerified {
+	if passwordReset.userIdentityVerified {
 		w.Header().Set("Location", "/reset-password/set-new-password")
 		w.WriteHeader(303)
 		return
@@ -1698,7 +1698,7 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 		return
 	}
 
-	if !passwordReset.firstFactorVerified {
+	if !passwordReset.userIdentityVerified {
 		w.Header().Set("Location", "/reset-password/verify-code")
 		w.WriteHeader(303)
 		return
