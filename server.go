@@ -9,12 +9,19 @@ import (
 	"strings"
 	"time"
 
+	_ "embed"
+
 	"github.com/pilcrowonpaper/basic-example.auth.pilcrowonpaper.com/ratelimit"
 
 	"golang.org/x/sync/semaphore"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
+
+const databaseFilename = "data.db"
+
+//go:embed schema.sql
+var schemaSQLScript string
 
 type serverStruct struct {
 	emailClient emailClientInterface
