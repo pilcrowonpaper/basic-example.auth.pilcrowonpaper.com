@@ -76,7 +76,7 @@ p > a {
 	cursor: pointer;
 }
 
-p + p {
+main p + p {
 	margin-top: 1rem;
 }
 
