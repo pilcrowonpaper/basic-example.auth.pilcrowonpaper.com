@@ -877,7 +877,7 @@ We do not share or sell this data to any third parties.</p>
 <p>The email address must be lowercase and no more than 100 characters long.</p>
 <form id="sign-up-form">
 	<label for="sign-up-form-email-address-input">Email address</label>
-	<input id="sign-up-form-email-address-input" name="email_address" type="email" required />
+	<input id="sign-up-form-email-address-input" name="email_address" type="email" required maxlength="100" />
 	<button id="sign-up-form-submit-button">Continue</button>
 </form>
 <a id="sign-in-link" href="/sign-in" class="link-button">Sign in with an existing account</a>`
@@ -1043,7 +1043,7 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 	bodyHTML := `<h1>Sign in</h1>
 <form id="sign-in-form">
 	<label for="sign-in-form-email-address-input">Email address (lowercase)</label>
-	<input id="sign-in-form-email-address-input" name="email_address" type="email" autocomplete="username" required/>
+	<input id="sign-in-form-email-address-input" name="email_address" type="email" autocomplete="username" required maxlength="100"/>
 	<label for="sign-in-form-password-input">Password</label>
 	<input id="sign-in-form-password-input" name="password" type="password" autocomplete="current-password" required/>
 	<button id="sign-in-form-submit-button">Continue</button>
@@ -1366,7 +1366,7 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 <p>The email address must be lowercase and no more than 100 characters long.</p>
 <form id="set-new-email-address-form">
 	<label for="set-new-email-address-form-new-email-address-input">New email address</label>
-	<input id="set-new-email-address-form-new-email-address-input" name="new_email_address" type="email" autocomplete="username" required />
+	<input id="set-new-email-address-form-new-email-address-input" name="new_email_address" type="email" autocomplete="username" required maxlength="100" />
 	<button id="set-new-email-address-form-submit-button">Continue</button>
 </form>
 <button id="cancel-button" class="link-button">Cancel</button>`
@@ -1637,7 +1637,7 @@ func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, reques
 <p>Enter your account email address and we'll email you a password reset code.</p>
 <form id="reset-password-form">
 	<label for="reset-password-form-email-address-input">Email address (lowercase)</label>
-	<input id="reset-password-form-email-address-input" name="email_address" type="email" autocomplete="username" required />
+	<input id="reset-password-form-email-address-input" name="email_address" type="email" autocomplete="username" required maxlength="100" />
 	<button id="reset-password-form-submit-button">Continue</button>
 </form>`
 
