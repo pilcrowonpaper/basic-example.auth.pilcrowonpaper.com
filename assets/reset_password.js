@@ -66,5 +66,5 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 	}
 	clientStateEventChannel.postMessage("password_reset_updated");
 
-	window.location.href = "/reset-password/verify-code";
+	window.location.href = "/reset-password/verify-email-code";
 });

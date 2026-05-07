@@ -40,7 +40,7 @@ Basic auth example: https://basic-example.auth.pilcrowonpaper.com`
 	return nil
 }
 
-func (server *serverStruct) sendPasswordResetCodeEmail(emailAddress string, code string) error {
+func (server *serverStruct) sendPasswordResetEmailCodeEmail(emailAddress string, code string) error {
 	formattedCode := formatPasswordResetCode(code)
 
 	subject := "Reset your account password"

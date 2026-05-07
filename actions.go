@@ -34,10 +34,11 @@ const (
 	actionVerifyAccountDeletionUserPassword = "verify_account_deletion_user_password"
 	actionConfirmAccountDeletion            = "confirm_account_deletion"
 
-	actionStartPasswordReset          = "start_password_reset"
-	actionCancelPasswordReset         = "cancel_password_reset"
-	actionVerifyPasswordResetCode     = "verify_password_reset_code"
-	actionSetPasswordResetNewPassword = "set_password_reset_new_password"
+	actionStartPasswordReset           = "start_password_reset"
+	actionCancelPasswordReset          = "cancel_password_reset"
+	actionSendPasswordResetEmailCode   = "send_password_reset_email_code"
+	actionVerifyPasswordResetEmailCode = "verify_password_reset_email_code"
+	actionSetPasswordResetNewPassword  = "set_password_reset_new_password"
 )
 
 func (server *serverStruct) startSignupAction(requestId string, clientIPAddress string, emailAddress string) (string, string) {
@@ -1227,7 +1228,7 @@ func (server *serverStruct) startPasswordResetAction(requestId string, clientIPA
 		return "", errorCodeRateLimited
 	}
 
-	passwordReset, passwordResetSecret, passwordResetVerificationCode, err := server.createPasswordReset(user.id, user.emailAddress)
+	passwordReset, passwordResetSecret, err := server.createPasswordResetFromUserEmailAddress(user.emailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create password reset: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartPasswordReset, errorMessage)
@@ -1236,7 +1237,7 @@ func (server *serverStruct) startPasswordResetAction(requestId string, clientIPA
 
 	server.logPasswordResetStartedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, user.emailAddress)
 
-	err = server.sendPasswordResetCodeEmail(user.emailAddress, passwordResetVerificationCode)
+	err = server.sendPasswordResetEmailCodeEmail(user.emailAddress, passwordReset.emailCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password reset verification email: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartPasswordReset, errorMessage)
@@ -1276,11 +1277,10 @@ func (server *serverStruct) cancelPasswordResetAction(requestId string, clientIP
 	return ""
 }
 
-func (server *serverStruct) verifyPasswordResetCodeAction(requestId string, clientIPAddress string, passwordResetToken string, code string) string {
+func (server *serverStruct) sendPasswordResetEmailCodeAction(requestId string, clientIPAddress string, passwordResetToken string) string {
 	const (
 		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_token"
 		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
-		errorCodeIncorrectCode               = "incorrect_code"
 		errorCodeRateLimited                 = "rate_limited"
 		errorCodeConflict                    = "conflict"
 		errorCodeUnexpectedError             = "unexpected_error"
@@ -1292,7 +1292,7 @@ func (server *serverStruct) verifyPasswordResetCodeAction(requestId string, clie
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate password reset token: %s", err.Error())
-		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetCode, errorMessage)
+		server.logActionInternalError(requestId, clientIPAddress, actionSendPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
@@ -1300,24 +1300,84 @@ func (server *serverStruct) verifyPasswordResetCodeAction(requestId string, clie
 		return errorCodeUserIdentityAlreadyVerified
 	}
 
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	if errors.Is(err, errItemNotFound) {
+		return errorCodeConflict
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		server.logActionInternalError(requestId, clientIPAddress, actionSendPasswordResetEmailCode, errorMessage)
+		return errorCodeUnexpectedError
+	}
+
+	rateLimitAllowed := server.emailRateLimit.Consume(userEmailAddress)
+	if !rateLimitAllowed {
+		return errorCodeRateLimited
+	}
+
+	err = server.sendPasswordResetEmailCodeEmail(userEmailAddress, passwordReset.emailCode)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to send password reset verification email: %s", err.Error())
+		server.logActionInternalError(requestId, clientIPAddress, actionSendPasswordResetEmailCode, errorMessage)
+		return errorCodeUnexpectedError
+	}
+
+	server.logRequestEmail(requestId, clientIPAddress, userEmailAddress, emailTypePasswordResetCode)
+
+	return ""
+}
+
+func (server *serverStruct) verifyPasswordResetEmailCodeAction(requestId string, clientIPAddress string, passwordResetToken string, emailCode string) string {
+	const (
+		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_token"
+		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
+		errorCodeIncorrectEmailCode          = "incorrect_email_code"
+		errorCodeRateLimited                 = "rate_limited"
+		errorCodeConflict                    = "conflict"
+		errorCodeUnexpectedError             = "unexpected_error"
+	)
+
+	passwordReset, err := server.validatePasswordResetToken(passwordResetToken)
+	if errors.Is(err, errInvalidPasswordResetToken) {
+		return errorCodeInvalidPasswordResetToken
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to validate password reset token: %s", err.Error())
+		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorMessage)
+		return errorCodeUnexpectedError
+	}
+
+	if passwordReset.userIdentityVerified {
+		return errorCodeUserIdentityAlreadyVerified
+	}
+
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	if errors.Is(err, errItemNotFound) {
+		return errorCodeConflict
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorMessage)
+		return errorCodeUnexpectedError
+	}
+
 	rateLimitAllowed := server.userPasswordResetCodeVerificationRateLimit.Consume(passwordReset.userId)
 	if !rateLimitAllowed {
 		return errorCodeRateLimited
 	}
 
-	codeHash := server.hashPasswordResetCode(code, passwordReset.codeSalt)
-	codeCorrect := constantTimeCompare(passwordReset.codeHash, codeHash)
+	codeCorrect := passwordReset.compareEmailCode(emailCode)
 	if !codeCorrect {
-		server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, passwordReset.emailAddress)
-		return errorCodeIncorrectCode
+		server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, userEmailAddress)
+		return errorCodeIncorrectEmailCode
 	}
 
-	server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, passwordReset.emailAddress)
+	server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, userEmailAddress)
 
 	err = server.setPasswordResetAsUserIdentityVerified(passwordReset.id)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to set password reset as user identity verified: %s", err.Error())
-		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetCode, errorMessage)
+		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
@@ -1348,6 +1408,16 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeVerificationCodeNotVerified
 	}
 
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	if errors.Is(err, errItemNotFound) {
+		return "", errorCodeConflict
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordResetNewPassword, errorMessage)
+		return "", errorCodeUnexpectedError
+	}
+
 	if !verifyUserPasswordPattern(newPassword) {
 		return "", errorCodeInvalidPassword
 	}
@@ -1362,13 +1432,6 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeWeakPassword
 	}
 
-	user, err := server.getUser(passwordReset.userId)
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
-		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordResetNewPassword, errorMessage)
-		return "", errorCodeUnexpectedError
-	}
-
 	session, sessionSecret, err := server.completePasswordReset(passwordReset.id, newPassword)
 	if errors.Is(err, errItemNotFound) || errors.Is(err, errItemConflict) {
 		return "", errorCodeConflict
@@ -1379,16 +1442,16 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logPasswordResetCompletedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, passwordReset.emailAddress, session.id)
+	server.logPasswordResetCompletedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, userEmailAddress, session.id)
 
-	err = server.sendPasswordUpdatedEmail(user.emailAddress)
+	err = server.sendPasswordUpdatedEmail(userEmailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password update email: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordResetNewPassword, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logRequestEmail(requestId, clientIPAddress, user.emailAddress, emailTypePasswordUpdatedNotification)
+	server.logRequestEmail(requestId, clientIPAddress, userEmailAddress, emailTypePasswordUpdatedNotification)
 
 	sessionToken := createSessionToken(session.id, sessionSecret)
 

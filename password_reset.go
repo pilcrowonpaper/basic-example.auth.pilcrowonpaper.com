@@ -22,9 +22,7 @@ type passwordResetStruct struct {
 	id                   string
 	userId               string
 	secretHash           []byte
-	emailAddress         string
-	codeHash             []byte
-	codeSalt             []byte
+	emailCode            string
 	userIdentityVerified bool
 	createdAt            time.Time
 }
@@ -33,6 +31,10 @@ func (passwordReset *passwordResetStruct) compareSecretAgainstHash(secret []byte
 	hashed := hashPasswordResetSecret(secret)
 	hashEqual := constantTimeCompare(hashed, passwordReset.secretHash)
 	return hashEqual
+}
+
+func (passwordReset *passwordResetStruct) compareEmailCode(emailCode string) bool {
+	return constantTimeCompareStrings(emailCode, passwordReset.emailCode)
 }
 
 func generatePasswordResetSecret() []byte {
@@ -74,7 +76,7 @@ func (server *serverStruct) setBlankPasswordResetTokenCookie(w http.ResponseWrit
 	http.SetCookie(w, cookie)
 }
 
-func (server *serverStruct) createPasswordReset(userId string, emailAddress string) (passwordResetStruct, []byte, string, error) {
+func (server *serverStruct) createPasswordResetFromUserEmailAddress(userEmailAddress string) (passwordResetStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
 	id := generateItemId()
@@ -82,48 +84,54 @@ func (server *serverStruct) createPasswordReset(userId string, emailAddress stri
 	secret := generatePasswordResetSecret()
 	secretHash := hashPasswordResetSecret(secret)
 
-	code := generatePasswordResetCode()
-	codeSalt := generateHashingSalt()
-	codeHash := server.hashPasswordResetCode(code, codeSalt)
+	emailCode := generatePasswordResetEmailCode()
 
-	passwordReset := passwordResetStruct{
-		id:           id,
-		userId:       userId,
-		secretHash:   secretHash,
-		emailAddress: emailAddress,
-		codeHash:     codeHash,
-		codeSalt:     codeSalt,
-		createdAt:    nowSecondPrecision,
-	}
-
+	userIds := []string{}
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return passwordResetStruct{}, nil, "", fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return passwordResetStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		"INSERT INTO password_reset (id, user_id, secret_hash, email_address, code_hash, code_salt, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		`INSERT INTO password_reset (id, user_id, secret_hash, email_code, created_at)
+SELECT ?, user.id, ?, ?, ? FROM user
+WHERE user.email_address = ?
+RETURNING user_id`,
 		&sqlitex.ExecOptions{
 			Args: []any{
-				passwordReset.id,
-				passwordReset.userId,
-				passwordReset.secretHash,
-				passwordReset.emailAddress,
-				passwordReset.codeHash,
-				passwordReset.codeSalt,
-				passwordReset.createdAt.Unix(),
+				id,
+				secretHash,
+				emailCode,
+				nowSecondPrecision.Unix(),
+				userEmailAddress,
+			},
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				userId := stmt.ColumnText(0)
+				userIds = append(userIds, userId)
+				return nil
 			},
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
-		return passwordResetStruct{}, nil, "", errItemConflict
+		return passwordResetStruct{}, nil, errItemConflict
 	}
 	if err != nil {
-		return passwordResetStruct{}, nil, "", fmt.Errorf("failed to insert into password_reset table: %s", err.Error())
+		return passwordResetStruct{}, nil, fmt.Errorf("failed to insert into password_reset table: %s", err.Error())
+	}
+	if len(userIds) < 1 {
+		return passwordResetStruct{}, nil, errItemNotFound
 	}
 
-	return passwordReset, secret, code, nil
+	passwordReset := passwordResetStruct{
+		id:         id,
+		userId:     userIds[0],
+		secretHash: secretHash,
+		emailCode:  emailCode,
+		createdAt:  nowSecondPrecision,
+	}
+
+	return passwordReset, secret, nil
 }
 
 func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordResetStruct, error) {
@@ -135,7 +143,7 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 	}
 	err = sqlitex.Execute(
 		databaseReadConnection,
-		"SELECT user_id, secret_hash, email_address, code_hash, code_salt, user_identity_verified, created_at FROM password_reset WHERE id = ?",
+		"SELECT user_id, secret_hash, email_code, user_identity_verified, created_at FROM password_reset WHERE id = ?",
 		&sqlitex.ExecOptions{
 			Args: []any{passwordResetId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -144,25 +152,17 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 				secretHash := make([]byte, stmt.ColumnLen(1))
 				stmt.ColumnBytes(1, secretHash)
 
-				emailAddress := stmt.ColumnText(2)
+				emailCode := stmt.ColumnText(2)
 
-				codeHash := make([]byte, stmt.ColumnLen(3))
-				stmt.ColumnBytes(3, codeHash)
+				userIdentityVerified := stmt.ColumnBool(3)
 
-				codeSalt := make([]byte, stmt.ColumnLen(4))
-				stmt.ColumnBytes(4, codeSalt)
-
-				userIdentityVerified := stmt.ColumnBool(5)
-
-				createdAt := time.Unix(stmt.ColumnInt64(6), 0)
+				createdAt := time.Unix(stmt.ColumnInt64(4), 0)
 
 				passwordReset := passwordResetStruct{
 					id:                   passwordResetId,
 					userId:               userId,
 					secretHash:           secretHash,
-					emailAddress:         emailAddress,
-					codeHash:             codeHash,
-					codeSalt:             codeSalt,
+					emailCode:            emailCode,
 					userIdentityVerified: userIdentityVerified,
 					createdAt:            createdAt,
 				}
@@ -188,6 +188,39 @@ func (server *serverStruct) getPasswordReset(passwordResetId string) (passwordRe
 	}
 
 	return passwordReset, nil
+}
+
+func (server *serverStruct) getPasswordResetUserEmailAddress(passwordResetId string) (string, error) {
+	userEmailAddresses := []string{}
+
+	databaseReadConnection, err := server.databaseReadConnectionPool.Take(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("failed to take database read connection: %s", err.Error())
+	}
+	err = sqlitex.Execute(
+		databaseReadConnection,
+		"SELECT user.email_address FROM password_reset INNER JOIN user ON password_reset.user_id = user.id WHERE password_reset.id = ?",
+		&sqlitex.ExecOptions{
+			Args: []any{passwordResetId},
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				userEmailAddress := stmt.ColumnText(0)
+
+				userEmailAddresses = append(userEmailAddresses, userEmailAddress)
+				return nil
+			},
+		},
+	)
+	server.databaseReadConnectionPool.Put(databaseReadConnection)
+	if err != nil {
+		return "", fmt.Errorf("failed to select from password_reset table: %s", err.Error())
+	}
+	if len(userEmailAddresses) < 1 {
+		return "", errItemNotFound
+	}
+
+	userEmailAddress := userEmailAddresses[0]
+
+	return userEmailAddress, nil
 }
 
 var errInvalidPasswordResetToken = errors.New("invalid password reset token")
@@ -356,7 +389,7 @@ func (server *serverStruct) deletePasswordReset(passwordResetId string) error {
 	return nil
 }
 
-func generatePasswordResetCode() string {
+func generatePasswordResetEmailCode() string {
 	emailCodeBytes := make([]byte, 5)
 	rand.Read(emailCodeBytes)
 	emailCode := base32.NewEncoding("ABCDEFGHJKLMNPQRSTUVWXYZ23456789").EncodeToString(emailCodeBytes)

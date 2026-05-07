@@ -256,9 +256,9 @@ func (server *serverStruct) handleRequest(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		// GET /reset-password/verify-code
-		if len(pathParts) == 2 && pathParts[1] == "verify-code" && r.Method == "GET" {
-			server.resetPasswordVerifyCodePageRoute(w, r, requestId, clientIPAddress)
+		// GET /reset-password/verify-email-code
+		if len(pathParts) == 2 && pathParts[1] == "verify-email-code" && r.Method == "GET" {
+			server.resetPasswordVerifyEmailCodePageRoute(w, r, requestId, clientIPAddress)
 			return
 		}
 

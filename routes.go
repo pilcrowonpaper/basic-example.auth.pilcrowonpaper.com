@@ -29,7 +29,7 @@ const (
 	routeUpdateEmailAddressVerifyNewEmailAddressPage = "update_email_address_verify_new_email_address_page"
 	routeDeleteAccountVerifyPasswordPage             = "delete_account_verify_password_page"
 	routeDeleteAccountConfirmPage                    = "delete_account_confirm_page"
-	routeResetPasswordVerifyCodePage                 = "reset_password_verify_code_page"
+	routeResetPasswordVerifyEmailCodePage            = "reset_password_verify_email_code_page"
 	routeResetPasswordSetNewPasswordPage             = "reset_password_set_new_password_page"
 )
 
@@ -638,24 +638,42 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionVerifyPasswordResetCode {
+	if actionName == actionSendPasswordResetEmailCode {
 		passwordResetToken, err := values.GetString("password_reset_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		code, err := values.GetString("code")
+		errorCode := server.sendPasswordResetEmailCodeAction(requestId, clientIPAddress, passwordResetToken)
+		if errorCode != "" {
+			server.logActionErrorResult(requestId, clientIPAddress, actionCancelPasswordReset, errorCode)
+			writeActionErrorResult(w, requestId, errorCode)
+			return
+		}
+		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelPasswordReset)
+
+		writeActionSuccessResult(w, requestId, "{}")
+		return
+	}
+
+	if actionName == actionVerifyPasswordResetEmailCode {
+		passwordResetToken, err := values.GetString("password_reset_token")
 		if err != nil {
 			w.WriteHeader(400)
 			return
 		}
-		errorCode := server.verifyPasswordResetCodeAction(requestId, clientIPAddress, passwordResetToken, code)
+		emailCode, err := values.GetString("email_code")
+		if err != nil {
+			w.WriteHeader(400)
+			return
+		}
+		errorCode := server.verifyPasswordResetEmailCodeAction(requestId, clientIPAddress, passwordResetToken, emailCode)
 		if errorCode != "" {
-			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyPasswordResetCode, errorCode)
+			server.logActionErrorResult(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorCode)
 			writeActionErrorResult(w, requestId, errorCode)
 			return
 		}
-		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyPasswordResetCode)
+		server.logActionSuccessResult(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode)
 
 		writeActionSuccessResult(w, requestId, "{}")
 		return
@@ -1611,7 +1629,6 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 var resetPasswordPageScript string
 
 func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, requestId string, clientIPAddress string) {
-
 	pageTitle := "Reset your password | Basic auth example"
 
 	bodyHTML := `<h1>Reset your password</h1>
@@ -1627,13 +1644,13 @@ func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, reques
 	writePageHTMLResponse(w, 200, pageHTML)
 }
 
-//go:embed assets/reset_password_verify_code.js
-var resetPasswordVerifyCodePageScript string
+//go:embed assets/reset_password_verify_email_code.js
+var resetPasswordVerifyEmailCodePageScript string
 
-//go:embed assets/reset_password_verify_code.css
-var resetPasswordVerifyCodePageStylesheet string
+//go:embed assets/reset_password_verify_email_code.css
+var resetPasswordVerifyEmailCodePageStylesheet string
 
-func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
+func (server *serverStruct) resetPasswordVerifyEmailCodePageRoute(w http.ResponseWriter, r *http.Request, requestId string, clientIPAddress string) {
 	passwordReset, passwordResetToken, err := server.validateRequestPasswordResetToken(r)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		server.setBlankPasswordResetTokenCookie(w)
@@ -1643,7 +1660,7 @@ func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWrit
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset token: %s", err.Error())
-		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordVerifyCodePage, errorMessage)
+		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordVerifyEmailCodePage, errorMessage)
 		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
 		writePageHTMLResponse(w, 500, pageHTML)
 		return
@@ -1655,23 +1672,41 @@ func (server *serverStruct) resetPasswordVerifyCodePageRoute(w http.ResponseWrit
 		return
 	}
 
-	pageTitle := "Verify password reset code | Basic auth example"
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	if errors.Is(err, errItemNotFound) {
+		server.setBlankPasswordResetTokenCookie(w)
+		w.Header().Set("Location", "/reset-password")
+		w.WriteHeader(303)
+		return
+	}
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordVerifyEmailCodePage, errorMessage)
+		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML)
+		return
+	}
 
-	bodyHTMLTemplate := `<h1>Verify password reset code</h1>
+	pageTitle := "Verify email code | Basic auth example"
+
+	bodyHTMLTemplate := `<h1>Verify email code</h1>
 <p>We sent an 8-digit code to %s. It may take up to 30 seconds to arrive. Check your spam or junk folder if you don't see it.</p>
-<form id="verify-code-form">
-	<label for="verify-code-form-code-input">Password reset code (hyphens and spaces are optional)</label>
-	<input id="verify-code-form-code-input" name="code" autocomplete="none" required />
-	<button id="verify-code-form-submit-button">Continue</button>
+<form id="verify-email-code-form">
+	<label for="verify-email-code-form-code-input">Password reset code (hyphens and spaces are optional)</label>
+	<input id="verify-email-code-form-code-input" name="email_code" autocomplete="none" required />
+	<button id="verify-email-code-form-submit-button">Continue</button>
 </form>
-<button id="cancel-button" class="link-button">Cancel</button>`
-	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(passwordReset.emailAddress))
+<div id="controls">
+	<button id="resend-email-code-button" class="link-button">Resend verification code</button>
+	<button id="cancel-button" class="link-button">Cancel</button>
+</div>`
+	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(userEmailAddress))
 
 	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
 	pageDataJSONBuilder.AddString("password_reset_token", passwordResetToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordVerifyCodePageScript, resetPasswordVerifyCodePageStylesheet, pageDataJSON)
+	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordVerifyEmailCodePageScript, resetPasswordVerifyEmailCodePageStylesheet, pageDataJSON)
 
 	writePageHTMLResponse(w, 200, pageHTML)
 }
@@ -1699,7 +1734,7 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	}
 
 	if !passwordReset.userIdentityVerified {
-		w.Header().Set("Location", "/reset-password/verify-code")
+		w.Header().Set("Location", "/reset-password/verify-email-code")
 		w.WriteHeader(303)
 		return
 	}
