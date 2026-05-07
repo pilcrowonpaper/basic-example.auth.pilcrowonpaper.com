@@ -1,10 +1,3 @@
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-clientStateEventChannel.addEventListener("message", (event) => {
-	if (event.data === "session_updated") {
-		window.location.reload();
-	}
-});
-
 document.getElementById("sign-up-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 
@@ -69,7 +62,6 @@ document.getElementById("sign-up-form").addEventListener("submit", async (event)
 	} else {
 		document.cookie = `signup_token=${signupToken}; Max-Age=3600; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("signup_updated");
 
 	window.location.href = "/sign-up/verify-email-address";
 });

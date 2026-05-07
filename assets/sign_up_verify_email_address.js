@@ -1,13 +1,6 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
 const signupToken = pageDataJSONObject.signup_token;
 
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-clientStateEventChannel.addEventListener("message", (event) => {
-	if (event.data === "session_updated" || event.data === "signup_updated") {
-		window.location.reload();
-	}
-});
-
 document
 	.getElementById("verify-verification-code-form")
 	.addEventListener("submit", async (event) => {
@@ -52,7 +45,6 @@ document
 					} else {
 						document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					}
-					clientStateEventChannel.postMessage("signup_updated");
 
 					alert("Your session has expired.");
 					window.location.href = "/sign-up";
@@ -76,8 +68,6 @@ document
 			submitButtonElement.disabled = false;
 			return;
 		}
-
-		clientStateEventChannel.postMessage("signup_updated");
 
 		window.location.href = "/sign-up/set-password";
 	});
@@ -117,7 +107,6 @@ resendVerificationCodeButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("signup_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
@@ -169,7 +158,6 @@ cancelButtonElement.addEventListener("click", async () => {
 		const resultJSONObject = await response.json();
 		if (!resultJSONObject.ok) {
 			if (resultJSONObject.error_code === "invalid_signup_token") {
-				clientStateEventChannel.postMessage("signup_updated");
 				if (window.location.protocol === "https:") {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
 				} else {
@@ -193,7 +181,6 @@ cancelButtonElement.addEventListener("click", async () => {
 	} else {
 		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("signup_updated");
 
 	window.location.href = "/sign-up";
 });

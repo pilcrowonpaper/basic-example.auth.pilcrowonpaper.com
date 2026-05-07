@@ -2,13 +2,6 @@ const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText)
 const sessionToken = pageDataJSONObject.session_token;
 const accountDeletionToken = pageDataJSONObject.account_deletion_token;
 
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-clientStateEventChannel.addEventListener("message", (event) => {
-	if (event.data === "session_updated" || event.data === "account_deletion_updated") {
-		window.location.reload();
-	}
-});
-
 const confirmButtonElement = document.getElementById("confirm-button");
 confirmButtonElement.addEventListener("click", async () => {
 	confirmButtonElement.disabled = true;
@@ -45,7 +38,6 @@ confirmButtonElement.addEventListener("click", async () => {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("session_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
@@ -57,7 +49,6 @@ confirmButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("account_deletion_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/account";
@@ -84,7 +75,6 @@ confirmButtonElement.addEventListener("click", async () => {
 		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("session_updated");
 
 	window.location.href = "/";
 });
@@ -125,7 +115,6 @@ cancelButtonElement.addEventListener("click", async () => {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("session_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
@@ -137,7 +126,6 @@ cancelButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("account_deletion_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/account";
@@ -157,7 +145,6 @@ cancelButtonElement.addEventListener("click", async () => {
 	} else {
 		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("account_deletion_updated");
 
 	window.location.href = "/account";
 });

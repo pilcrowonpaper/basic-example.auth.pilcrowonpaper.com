@@ -1,5 +1,3 @@
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-
 document.getElementById("reset-password-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 
@@ -64,7 +62,6 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
 	} else {
 		document.cookie = `password_reset_token=${passwordResetToken}; Max-Age=3600; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("password_reset_updated");
 
 	window.location.href = "/reset-password/verify-email-code";
 });

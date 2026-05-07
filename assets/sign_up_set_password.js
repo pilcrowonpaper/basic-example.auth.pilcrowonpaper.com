@@ -1,13 +1,6 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
 const signupToken = pageDataJSONObject.signup_token;
 
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-clientStateEventChannel.addEventListener("message", (event) => {
-	if (event.data === "session_updated" || event.data === "signup_updated") {
-		window.location.reload();
-	}
-});
-
 document.getElementById("set-password-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 
@@ -48,7 +41,6 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("signup_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
@@ -82,8 +74,6 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		document.cookie = `session_token=${sessionToken}; Max-Age=86400; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("signup_updated");
-	clientStateEventChannel.postMessage("session_updated");
 
 	window.location.href = "/account";
 });
@@ -121,7 +111,6 @@ cancelButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("signup_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-up";
@@ -141,7 +130,6 @@ cancelButtonElement.addEventListener("click", async () => {
 	} else {
 		document.cookie = `signup_token=; Max-Age=0; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("signup_updated");
 
 	window.location.href = "/sign-up";
 });

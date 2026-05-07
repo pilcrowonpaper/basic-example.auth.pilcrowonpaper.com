@@ -2,13 +2,6 @@ const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText)
 const sessionToken = pageDataJSONObject.session_token;
 const emailAddressUpdateToken = pageDataJSONObject.email_address_update_token;
 
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-clientStateEventChannel.addEventListener("message", (event) => {
-	if (event.data === "session_updated" || event.data === "email_address_update_updated") {
-		window.location.reload();
-	}
-});
-
 document
 	.getElementById("verify-verification-code-form")
 	.addEventListener("submit", async (event) => {
@@ -56,7 +49,6 @@ document
 						document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 						document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					}
-					clientStateEventChannel.postMessage("session_updated");
 
 					alert("Your session has expired.");
 					window.location.href = "/sign-in";
@@ -68,7 +60,6 @@ document
 					} else {
 						document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					}
-					clientStateEventChannel.postMessage("email_address_update_updated");
 
 					alert("Your session has expired.");
 					window.location.href = "/account";
@@ -103,7 +94,6 @@ document
 		} else {
 			document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 		}
-		clientStateEventChannel.postMessage("email_address_update_updated");
 
 		window.location.href = "/account";
 	});
@@ -147,7 +137,6 @@ resendVerificationCodeButtonElement.addEventListener("click", async () => {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("session_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
@@ -159,7 +148,6 @@ resendVerificationCodeButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("email_address_update_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/account";
@@ -220,7 +208,6 @@ cancelButtonElement.addEventListener("click", async () => {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("session_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
@@ -232,7 +219,6 @@ cancelButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("email_address_update_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/account";
@@ -252,7 +238,6 @@ cancelButtonElement.addEventListener("click", async () => {
 	} else {
 		document.cookie = `email_address_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("email_address_update_updated");
 
 	window.location.href = "/account";
 });

@@ -2,13 +2,6 @@ const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText)
 const sessionToken = pageDataJSONObject.session_token;
 const passwordUpdateToken = pageDataJSONObject.password_update_token;
 
-const clientStateEventChannel = new BroadcastChannel("client_state_event");
-clientStateEventChannel.addEventListener("message", (event) => {
-	if (event.data === "session_updated" || event.data === "password_update_updated") {
-		window.location.reload();
-	}
-});
-
 document.getElementById("verify-password-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 
@@ -51,7 +44,6 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					document.cookie = `password_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("session_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
@@ -63,7 +55,6 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 				} else {
 					document.cookie = `password_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("password_update_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/account";
@@ -87,8 +78,6 @@ document.getElementById("verify-password-form").addEventListener("submit", async
 		submitButtonElement.disabled = false;
 		return;
 	}
-
-	clientStateEventChannel.postMessage("password_update_updated");
 
 	window.location.href = "/update-password/set-new-password";
 });
@@ -130,7 +119,6 @@ cancelButtonElement.addEventListener("click", async () => {
 					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
 					document.cookie = `password_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("session_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/sign-in";
@@ -142,7 +130,6 @@ cancelButtonElement.addEventListener("click", async () => {
 				} else {
 					document.cookie = `password_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 				}
-				clientStateEventChannel.postMessage("password_update_updated");
 
 				alert("Your session has expired.");
 				window.location.href = "/account";
@@ -162,7 +149,6 @@ cancelButtonElement.addEventListener("click", async () => {
 	} else {
 		document.cookie = `password_update_token=; Max-Age=0; SameSite=Lax; Path=/`;
 	}
-	clientStateEventChannel.postMessage("password_update_updated");
 
 	window.location.href = "/account";
 });
