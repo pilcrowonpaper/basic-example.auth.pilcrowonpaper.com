@@ -76,6 +76,10 @@ p > a {
 	cursor: pointer;
 }
 
+p + p {
+	margin-top: 1rem;
+}
+
 .block-button {
 	padding: 0.5rem 1rem;
 	color: white;

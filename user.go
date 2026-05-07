@@ -55,8 +55,19 @@ func verifyUserPasswordStrength(password string) (bool, error) {
 }
 
 func verifyUserPasswordPattern(password string) bool {
-	length := len([]rune(password))
-	return length >= 10 && length <= 100
+	if len(password) < 10 && len(password) > 100 {
+		return false
+	}
+	// Printable ASCII
+	for _, char := range password {
+		if char < ' ' || char > '~' {
+			return false
+		}
+	}
+	if password[0] == ' ' || password[len(password)-1] == ' ' {
+		return false
+	}
+	return true
 }
 
 func (server *serverStruct) checkUserEmailAddressAvailability(emailAddress string) (bool, error) {

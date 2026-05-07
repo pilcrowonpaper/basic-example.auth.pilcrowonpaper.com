@@ -874,8 +874,9 @@ func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Reque
 For security purposes, logs (which may include your IP address and email address) are retained for up to 90 days.
 These logs are processed and stored by <a href="https://cloudflare.com">Cloudflare</a> and <a href="https://railway.com">Railway</a>.
 We do not share or sell this data to any third parties.</p>
+<p>The email address must be lowercase and no more than 100 characters long.</p>
 <form id="sign-up-form">
-	<label for="sign-up-form-email-address-input">Email address (lowercase)</label>
+	<label for="sign-up-form-email-address-input">Email address</label>
 	<input id="sign-up-form-email-address-input" name="email_address" type="email" required />
 	<button id="sign-up-form-submit-button">Continue</button>
 </form>
@@ -997,7 +998,7 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	pageTitle := "Set your password | Basic auth example"
 
 	bodyHTMLTemplate := `<h1>Set your password</h1>
-<p>Use a strong password with at least 10 characters.</p>
+	<p>Use a strong password between 10 and 100 characters long. It must only include standard characters and cannot begin or end with a space.</p>
 <form id="set-password-form">
 	<input name="email_address" autocomplete="username" value="%s" hidden/>
 	<label for="set-password-form-password-input">Password</label>
@@ -1198,7 +1199,7 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	pageTitle := "Set your new password | Basic auth example"
 
 	bodyHTML := `<h1>Set your new password</h1>
-<p>Use a strong password with at least 10 characters.</p>
+<p>Use a strong password between 10 and 100 characters long. It must only include standard characters and cannot begin or end with a space.</p>
 <form id="set-new-password-form">
 	<label for="set-new-password-form-password-input">New password</label>
 	<input id="set-new-password-form-password-input" name="new_password" type="password" autocomplete="new-password" required minlength="10" />
@@ -1362,6 +1363,7 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	pageTitle := "Set your new email address | Basic auth example"
 
 	bodyHTML := `<h1>Set your new email address</h1>
+<p>The email address must be lowercase and no more than 100 characters long.</p>
 <form id="set-new-email-address-form">
 	<label for="set-new-email-address-form-new-email-address-input">New email address</label>
 	<input id="set-new-email-address-form-new-email-address-input" name="new_email_address" type="email" autocomplete="username" required />
@@ -1757,7 +1759,7 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	pageTitle := "Set your new password | Basic auth example"
 
 	bodyHTMLTemplate := `<h1>Set your new password</h1>
-<p>Use a strong password with at least 10 characters.</p>
+	<p>Use a strong password between 10 and 100 characters long. It must only include standard characters and cannot begin or end with a space.</p>
 <form id="set-new-password-form">
 	<input name="email_address" autocomplete="username" value="%s" hidden />
 	<label for="set-new-password-form-new-password-input">New password</label>
