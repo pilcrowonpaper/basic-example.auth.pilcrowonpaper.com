@@ -51,8 +51,8 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 				submitButtonElement.disabled = false;
 				return;
 			}
-			if (resultJSONObject.error_code === "rate_limited") {
-				alert("Too many attempts. Please try again later.");
+			if (resultJSONObject.error_code === "invalid_password") {
+				alert("Invalid password.");
 				submitButtonElement.disabled = false;
 				return;
 			}
