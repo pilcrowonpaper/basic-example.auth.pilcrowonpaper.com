@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -24,20 +22,9 @@ type accountDeletionStruct struct {
 }
 
 func (accountDeletion *accountDeletionStruct) compareSecretAgainstHash(secret []byte) bool {
-	hashed := hashAccountDeletionSecret(secret)
+	hashed := hashSessionSecret(secret)
 	hashEqual := constantTimeCompare(hashed, accountDeletion.secretHash)
 	return hashEqual
-}
-
-func generateAccountDeletionSecret() []byte {
-	secretBytes := make([]byte, 32)
-	rand.Read(secretBytes)
-	return secretBytes
-}
-
-func hashAccountDeletionSecret(secret []byte) []byte {
-	secretHash := sha256.Sum256(secret)
-	return secretHash[:]
 }
 
 func createAccountDeletionToken(accountDeletionId string, accountDeletionSecret []byte) string {
@@ -65,8 +52,8 @@ func (server *serverStruct) createAccountDeletion(sessionId string) (accountDele
 
 	id := generateItemId()
 
-	secret := generateAccountDeletionSecret()
-	secretHash := hashAccountDeletionSecret(secret)
+	secret := generateSessionSecret()
+	secretHash := hashSessionSecret(secret)
 
 	accountDeletion := accountDeletionStruct{
 		id:                   id,

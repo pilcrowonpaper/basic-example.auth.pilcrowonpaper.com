@@ -3,17 +3,14 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base32"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/argon2"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
@@ -28,32 +25,13 @@ type passwordResetStruct struct {
 }
 
 func (passwordReset *passwordResetStruct) compareSecretAgainstHash(secret []byte) bool {
-	hashed := hashPasswordResetSecret(secret)
+	hashed := hashSessionSecret(secret)
 	hashEqual := constantTimeCompare(hashed, passwordReset.secretHash)
 	return hashEqual
 }
 
 func (passwordReset *passwordResetStruct) compareEmailCode(emailCode string) bool {
 	return constantTimeCompareStrings(emailCode, passwordReset.emailCode)
-}
-
-func generatePasswordResetSecret() []byte {
-	secretBytes := make([]byte, 32)
-	rand.Read(secretBytes)
-	return secretBytes
-}
-
-func hashPasswordResetSecret(secret []byte) []byte {
-	secretHash := sha256.Sum256(secret)
-	return secretHash[:]
-}
-
-func (server *serverStruct) hashPasswordResetCode(code string, salt []byte) []byte {
-	server.cpuIntensiveSemaphore.Acquire(context.Background(), 1)
-	codeHash := argon2.IDKey([]byte(code), salt, 1, 16*1024, 3, 32)
-	server.cpuIntensiveSemaphore.Release(1)
-	runtime.GC()
-	return codeHash
 }
 
 func createPasswordResetToken(passwordResetId string, passwordResetSecret []byte) string {
@@ -81,8 +59,8 @@ func (server *serverStruct) createPasswordResetFromUserEmailAddress(userEmailAdd
 
 	id := generateItemId()
 
-	secret := generatePasswordResetSecret()
-	secretHash := hashPasswordResetSecret(secret)
+	secret := generateSessionSecret()
+	secretHash := hashSessionSecret(secret)
 
 	emailCode := generatePasswordResetEmailCode()
 

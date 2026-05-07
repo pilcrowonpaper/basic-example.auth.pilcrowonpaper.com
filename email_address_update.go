@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -28,7 +26,7 @@ type emailAddressUpdateStruct struct {
 }
 
 func (emailAddressUpdate *emailAddressUpdateStruct) compareSecretAgainstHash(secret []byte) bool {
-	hashed := hashEmailAddressUpdateSecret(secret)
+	hashed := hashSessionSecret(secret)
 	hashEqual := constantTimeCompare(hashed, emailAddressUpdate.secretHash)
 	return hashEqual
 }
@@ -38,17 +36,6 @@ func (emailAddressUpdate *emailAddressUpdateStruct) compareNewEmailAddressVerifi
 		return false
 	}
 	return constantTimeCompareStrings(newEmailAddressVerificationCode, emailAddressUpdate.newEmailAddressVerificationCode)
-}
-
-func generateEmailAddressUpdateSecret() []byte {
-	secretBytes := make([]byte, 32)
-	rand.Read(secretBytes)
-	return secretBytes
-}
-
-func hashEmailAddressUpdateSecret(secret []byte) []byte {
-	secretHash := sha256.Sum256(secret)
-	return secretHash[:]
 }
 
 func createEmailAddressUpdateToken(emailAddressUpdateId string, emailAddressUpdateSecret []byte) string {
@@ -78,8 +65,8 @@ func (server *serverStruct) createEmailAddressUpdate(sessionId string) (emailAdd
 
 	id := generateItemId()
 
-	secret := generateEmailAddressUpdateSecret()
-	secretHash := hashEmailAddressUpdateSecret(secret)
+	secret := generateSessionSecret()
+	secretHash := hashSessionSecret(secret)
 
 	emailAddressUpdate := emailAddressUpdateStruct{
 		id:                                     id,

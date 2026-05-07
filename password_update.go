@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -24,20 +22,9 @@ type passwordUpdateStruct struct {
 }
 
 func (passwordUpdate *passwordUpdateStruct) compareSecretAgainstHash(secret []byte) bool {
-	hashed := hashPasswordUpdateSecret(secret)
+	hashed := hashSessionSecret(secret)
 	hashEqual := constantTimeCompare(hashed, passwordUpdate.secretHash)
 	return hashEqual
-}
-
-func generatePasswordUpdateSecret() []byte {
-	secretBytes := make([]byte, 32)
-	rand.Read(secretBytes)
-	return secretBytes
-}
-
-func hashPasswordUpdateSecret(secret []byte) []byte {
-	secretHash := sha256.Sum256(secret)
-	return secretHash[:]
 }
 
 func createPasswordUpdateToken(passwordUpdateId string, passwordUpdateSecret []byte) string {
@@ -65,8 +52,8 @@ func (server *serverStruct) createPasswordUpdate(sessionId string) (passwordUpda
 
 	id := generateItemId()
 
-	secret := generatePasswordUpdateSecret()
-	secretHash := hashPasswordUpdateSecret(secret)
+	secret := generateSessionSecret()
+	secretHash := hashSessionSecret(secret)
 
 	passwordUpdate := passwordUpdateStruct{
 		id:                   id,

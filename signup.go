@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -25,24 +23,13 @@ type signupStruct struct {
 }
 
 func (signup *signupStruct) compareSecretAgainstHash(secret []byte) bool {
-	hashed := hashSignupSecret(secret)
+	hashed := hashSessionSecret(secret)
 	hashEqual := constantTimeCompare(hashed, signup.secretHash)
 	return hashEqual
 }
 
 func (signup *signupStruct) compareEmailAddressVerificationCode(emailAddressVerificationCode string) bool {
 	return constantTimeCompareStrings(emailAddressVerificationCode, signup.emailAddressVerificationCode)
-}
-
-func generateSignupSecret() []byte {
-	secretBytes := make([]byte, 32)
-	rand.Read(secretBytes)
-	return secretBytes
-}
-
-func hashSignupSecret(secret []byte) []byte {
-	secretHash := sha256.Sum256(secret)
-	return secretHash[:]
 }
 
 func createSignupToken(signupId string, signupSecret []byte) string {
@@ -72,8 +59,8 @@ func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []b
 
 	id := generateItemId()
 
-	secret := generateSignupSecret()
-	secretHash := hashSignupSecret(secret)
+	secret := generateSessionSecret()
+	secretHash := hashSessionSecret(secret)
 
 	emailAddressVerificationCode := generateEmailAddressVerificationCode()
 
