@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const SessionToken = pageDataJSONObject.auth_session_token;
+const sessionToken = pageDataJSONObject.auth_session_token;
 const accountDeletionSessionToken = pageDataJSONObject.account_deletion_session_token;
 
 const confirmButtonElement = document.getElementById("confirm-button");
@@ -12,7 +12,7 @@ async function handleConfirmButtonClickEvent() {
 	confirmButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		account_deletion_session_token: accountDeletionSessionToken,
 	};
 
@@ -65,7 +65,7 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		account_deletion_session_token: accountDeletionSessionToken,
 	};
 

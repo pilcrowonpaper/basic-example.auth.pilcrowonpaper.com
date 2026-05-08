@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const SessionToken = pageDataJSONObject.auth_session_token;
+const sessionToken = pageDataJSONObject.auth_session_token;
 const emailAddressUpdateSessionToken = pageDataJSONObject.email_address_update_session_token;
 
 const verifyPasswordFormElement = document.getElementById("verify-password-form");
@@ -18,7 +18,7 @@ async function handleVerifyPasswordFormSubmitEvent(event) {
 	const password = formData.get("password");
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		email_address_update_session_token: emailAddressUpdateSessionToken,
 		password: password,
 	};
@@ -77,7 +77,7 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		email_address_update_session_token: emailAddressUpdateSessionToken,
 	};
 

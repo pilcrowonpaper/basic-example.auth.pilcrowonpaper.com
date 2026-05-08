@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const SessionToken = pageDataJSONObject.auth_session_token;
+const sessionToken = pageDataJSONObject.auth_session_token;
 
 const updateEmailAddressButtonElement = document.getElementById("update-email-address-button");
 updateEmailAddressButtonElement.addEventListener("click", handleUpdateEmailAddressButtonClickEvent);
@@ -20,7 +20,7 @@ async function handleUpdateEmailAddressButtonClickEvent() {
 	updateEmailAddressButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 	};
 
 	let actionResult;
@@ -65,7 +65,7 @@ async function handleUpdatePasswordButtonClickEvent() {
 	updatePasswordButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 	};
 
 	let actionResult;
@@ -108,7 +108,7 @@ async function handleSignOutClickEvent() {
 	signOutButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 	};
 
 	let actionResult;
@@ -156,7 +156,7 @@ async function handleSignOutAllDevicesButtonClickEvent() {
 	signOutAllDevicesButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 	};
 
 	let actionResult;
@@ -199,7 +199,7 @@ async function handleDeleteAccountButtonClickEvent() {
 	deleteAccountButton.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 	};
 
 	let actionResult;

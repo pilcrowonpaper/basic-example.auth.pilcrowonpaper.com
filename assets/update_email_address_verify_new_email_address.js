@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const SessionToken = pageDataJSONObject.auth_session_token;
+const sessionToken = pageDataJSONObject.auth_session_token;
 const emailAddressUpdateSessionToken = pageDataJSONObject.email_address_update_session_token;
 
 const verifyVerificationCodeFormElement = document.getElementById("verify-verification-code-form");
@@ -32,7 +32,7 @@ async function handleVerifyVerificationCodeFormSubmitEvent(event) {
 	const verificationCode = verificationCodeInputValue.replaceAll(" ", "").replaceAll("-", "");
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		email_address_update_session_token: emailAddressUpdateSessionToken,
 		verification_code: verificationCode,
 	};
@@ -96,7 +96,7 @@ async function handleResendVerificationCodeButtonClickEvent() {
 	resendVerificationCodeButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		email_address_update_session_token: emailAddressUpdateSessionToken,
 	};
 
@@ -150,7 +150,7 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		auth_session_token: SessionToken,
+		auth_session_token: sessionToken,
 		email_address_update_session_token: emailAddressUpdateSessionToken,
 	};
 
