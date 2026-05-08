@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const sessionToken = pageDataJSONObject.session_token;
+const SessionToken = pageDataJSONObject.auth_session_token;
 
 const updateEmailAddressButtonElement = document.getElementById("update-email-address-button");
 updateEmailAddressButtonElement.addEventListener("click", handleUpdateEmailAddressButtonClickEvent);
@@ -20,7 +20,7 @@ async function handleUpdateEmailAddressButtonClickEvent() {
 	updateEmailAddressButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
+		auth_session_token: SessionToken,
 	};
 
 	let actionResult;
@@ -34,8 +34,8 @@ async function handleUpdateEmailAddressButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
@@ -54,7 +54,9 @@ async function handleUpdateEmailAddressButtonClickEvent() {
 		return;
 	}
 
-	setEmailAddressUpdateTokenCookie(actionResult.valuesJSONObject.email_address_update_token);
+	setEmailAddressUpdateTokenCookie(
+		actionResult.valuesJSONObject.email_address_update_session_token,
+	);
 
 	window.location.href = "/update-email-address/verify-password";
 }
@@ -63,7 +65,7 @@ async function handleUpdatePasswordButtonClickEvent() {
 	updatePasswordButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
+		auth_session_token: SessionToken,
 	};
 
 	let actionResult;
@@ -77,8 +79,8 @@ async function handleUpdatePasswordButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
@@ -97,7 +99,7 @@ async function handleUpdatePasswordButtonClickEvent() {
 		return;
 	}
 
-	setPasswordUpdateTokenCookie(actionResult.valuesJSONObject.password_update_token);
+	setPasswordUpdateSessionTokenCookie(actionResult.valuesJSONObject.password_update_session_token);
 
 	window.location.href = "/update-password/verify-password";
 }
@@ -106,7 +108,7 @@ async function handleSignOutClickEvent() {
 	signOutButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
+		auth_session_token: SessionToken,
 	};
 
 	let actionResult;
@@ -120,8 +122,8 @@ async function handleSignOutClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
@@ -140,7 +142,7 @@ async function handleSignOutClickEvent() {
 		return;
 	}
 
-	deleteSessionTokenCookie();
+	deleteAuthSessionTokenCookie();
 
 	window.location.href = "/sign-in";
 }
@@ -154,7 +156,7 @@ async function handleSignOutAllDevicesButtonClickEvent() {
 	signOutAllDevicesButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
+		auth_session_token: SessionToken,
 	};
 
 	let actionResult;
@@ -168,8 +170,8 @@ async function handleSignOutAllDevicesButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
@@ -188,7 +190,7 @@ async function handleSignOutAllDevicesButtonClickEvent() {
 		return;
 	}
 
-	deleteSessionTokenCookie();
+	deleteAuthSessionTokenCookie();
 
 	window.location.href = "/sign-in";
 }
@@ -197,7 +199,7 @@ async function handleDeleteAccountButtonClickEvent() {
 	deleteAccountButton.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
+		auth_session_token: SessionToken,
 	};
 
 	let actionResult;
@@ -211,8 +213,8 @@ async function handleDeleteAccountButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
@@ -231,7 +233,7 @@ async function handleDeleteAccountButtonClickEvent() {
 		return;
 	}
 
-	setAccountDeletionTokenCookie(actionResult.valuesJSONObject.account_deletion_token);
+	setAccountDeletionTokenCookie(actionResult.valuesJSONObject.account_deletion_session_token);
 
 	window.location.href = "/delete-account/verify-password";
 }

@@ -93,23 +93,23 @@ func (server *serverStruct) logRequestEvent(eventName string, requestId string, 
 	if tags.userId != "" {
 		tagsJSONBuilder.AddString("user_id", tags.userId)
 	}
-	if tags.sessionId != "" {
-		tagsJSONBuilder.AddString("session_id", tags.sessionId)
+	if tags.authSessionId != "" {
+		tagsJSONBuilder.AddString("auth_session_id", tags.authSessionId)
 	}
-	if tags.signupId != "" {
-		tagsJSONBuilder.AddString("signup_id", tags.signupId)
+	if tags.signupSessionId != "" {
+		tagsJSONBuilder.AddString("signup_session_id", tags.signupSessionId)
 	}
-	if tags.emailAddressUpdateId != "" {
-		tagsJSONBuilder.AddString("email_address_update_id", tags.emailAddressUpdateId)
+	if tags.emailAddressUpdateSessionId != "" {
+		tagsJSONBuilder.AddString("email_address_update_session_id", tags.emailAddressUpdateSessionId)
 	}
-	if tags.passwordUpdateId != "" {
-		tagsJSONBuilder.AddString("password_update_id", tags.passwordUpdateId)
+	if tags.passwordUpdateSessionId != "" {
+		tagsJSONBuilder.AddString("password_update_session_id", tags.passwordUpdateSessionId)
 	}
-	if tags.accountDeletionId != "" {
-		tagsJSONBuilder.AddString("account_deletion_id", tags.accountDeletionId)
+	if tags.accountDeletionSessionId != "" {
+		tagsJSONBuilder.AddString("account_deletion_session_id", tags.accountDeletionSessionId)
 	}
-	if tags.passwordResetId != "" {
-		tagsJSONBuilder.AddString("password_reset_id", tags.passwordResetId)
+	if tags.passwordResetSessionId != "" {
+		tagsJSONBuilder.AddString("password_reset_session_id", tags.passwordResetSessionId)
 	}
 	if tags.emailAddress != "" {
 		tagsJSONBuilder.AddString("email_address", tags.emailAddress)
@@ -129,14 +129,14 @@ func (server *serverStruct) logRequestEvent(eventName string, requestId string, 
 }
 
 type requestEventTagsStruct struct {
-	userId               string
-	sessionId            string
-	signupId             string
-	emailAddressUpdateId string
-	passwordUpdateId     string
-	accountDeletionId    string
-	passwordResetId      string
-	emailAddress         string
+	userId                      string
+	authSessionId               string
+	signupSessionId             string
+	emailAddressUpdateSessionId string
+	passwordUpdateSessionId     string
+	accountDeletionSessionId    string
+	passwordResetSessionId      string
+	emailAddress                string
 }
 
 func (server *serverStruct) logBackgroundJobRun(runId string, backgroundJobName string) {
@@ -209,7 +209,7 @@ const (
 	emailTypeEmailAddressUpdatedNotification                   = "email_address_updated_notification"
 	emailTypeEmailAddressUpdateNewEmailAddressVerificationCode = "email_address_update_new_email_address_verification_code"
 	emailTypePasswordUpdatedNotification                       = "password_updated_notification"
-	emailTypePasswordResetCode                                 = "password_reset_code"
+	emailTypePasswordResetEmailCode                            = "password_reset_email_code"
 )
 
 func (server *serverStruct) logRequestEmail(requestId string, clientIPAddress string, emailAddress string, emailType string) {

@@ -1,6 +1,6 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const sessionToken = pageDataJSONObject.session_token;
-const emailAddressUpdateToken = pageDataJSONObject.email_address_update_token;
+const SessionToken = pageDataJSONObject.auth_session_token;
+const emailAddressUpdateSessionToken = pageDataJSONObject.email_address_update_session_token;
 
 const verifyVerificationCodeFormElement = document.getElementById("verify-verification-code-form");
 verifyVerificationCodeFormElement.addEventListener(
@@ -32,8 +32,8 @@ async function handleVerifyVerificationCodeFormSubmitEvent(event) {
 	const verificationCode = verificationCodeInputValue.replaceAll(" ", "").replaceAll("-", "");
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
-		email_address_update_token: emailAddressUpdateToken,
+		auth_session_token: SessionToken,
+		email_address_update_session_token: emailAddressUpdateSessionToken,
 		verification_code: verificationCode,
 	};
 
@@ -51,15 +51,15 @@ async function handleVerifyVerificationCodeFormSubmitEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionTokenCookie();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionTokenCookie();
 			deleteEmailAddressUpdateTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
 			return;
 		}
-		if (actionResult.errorCode === "invalid_email_address_update_token") {
+		if (actionResult.errorCode === "invalid_email_address_update_session_token") {
 			deleteEmailAddressUpdateTokenCookie();
 
 			alert("Your session has expired.");
@@ -96,8 +96,8 @@ async function handleResendVerificationCodeButtonClickEvent() {
 	resendVerificationCodeButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
-		email_address_update_token: emailAddressUpdateToken,
+		auth_session_token: SessionToken,
+		email_address_update_session_token: emailAddressUpdateSessionToken,
 	};
 
 	let actionResult;
@@ -114,15 +114,15 @@ async function handleResendVerificationCodeButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionTokenCookie();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionTokenCookie();
 			deleteEmailAddressUpdateTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
 			return;
 		}
-		if (actionResult.errorCode === "invalid_email_address_update_token") {
+		if (actionResult.errorCode === "invalid_email_address_update_session_token") {
 			deleteEmailAddressUpdateTokenCookie();
 
 			alert("Your session has expired.");
@@ -150,8 +150,8 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
-		email_address_update_token: emailAddressUpdateToken,
+		auth_session_token: SessionToken,
+		email_address_update_session_token: emailAddressUpdateSessionToken,
 	};
 
 	let actionResult;
@@ -165,15 +165,15 @@ async function handleCancelButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionTokenCookie();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionTokenCookie();
 			deleteEmailAddressUpdateTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
 			return;
 		}
-		if (actionResult.errorCode === "invalid_email_address_update_token") {
+		if (actionResult.errorCode === "invalid_email_address_update_session_token") {
 			deleteEmailAddressUpdateTokenCookie();
 
 			alert("Your session has expired.");

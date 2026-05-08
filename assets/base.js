@@ -7,52 +7,56 @@ window.addEventListener("pageshow", () => {
 	}
 });
 
-function setSessionTokenCookie(sessionToken) {
-	setCookieWithExpiration("session_token", sessionToken, 86400);
+function setAuthSessionTokenCookie(authSessionToken) {
+	setCookieWithExpiration("auth_session_token", authSessionToken, 86400);
 }
 
-function deleteSessionTokenCookie() {
-	setCookieWithExpiration("session_token", "", 0);
+function deleteAuthSessionTokenCookie() {
+	setCookieWithExpiration("auth_session_token", "", 0);
 }
 
-function setSignupTokenCookie(signupToken) {
-	setCookieWithExpiration("signup_token", signupToken, 86400);
+function setSignupAuthSessionTokenCookie(signupAuthSessionToken) {
+	setCookieWithExpiration("signup_session_token", signupAuthSessionToken, 86400);
 }
 
-function deleteSignupTokenCookie() {
-	setCookieWithExpiration("signup_token", "", 0);
+function deleteSignupAuthSessionTokenCookie() {
+	setCookieWithExpiration("signup_session_token", "", 0);
 }
 
-function setEmailAddressUpdateTokenCookie(emailAddressUpdateToken) {
-	setCookieWithExpiration("email_address_update_token", emailAddressUpdateToken, 86400);
+function setEmailAddressUpdateTokenCookie(emailAddressUpdateSessionToken) {
+	setCookieWithExpiration(
+		"email_address_update_session_token",
+		emailAddressUpdateSessionToken,
+		86400,
+	);
 }
 
 function deleteEmailAddressUpdateTokenCookie() {
-	setCookieWithExpiration("email_address_update_token", "", 0);
+	setCookieWithExpiration("email_address_update_session_token", "", 0);
 }
 
-function setPasswordUpdateTokenCookie(passwordUpdateToken) {
-	setCookieWithExpiration("password_update_token", passwordUpdateToken, 86400);
+function setPasswordUpdateSessionTokenCookie(passwordUpdateSessionToken) {
+	setCookieWithExpiration("password_update_session_token", passwordUpdateSessionToken, 86400);
 }
 
-function deletePasswordUpdateTokenCookie() {
-	setCookieWithExpiration("password_update_token", "", 0);
+function deletePasswordUpdateSessionTokenCookie() {
+	setCookieWithExpiration("password_update_session_token", "", 0);
 }
 
-function setAccountDeletionTokenCookie(accountDeletionToken) {
-	setCookieWithExpiration("account_deletion_token", accountDeletionToken, 86400);
+function setAccountDeletionTokenCookie(accountDeletionSessionToken) {
+	setCookieWithExpiration("account_deletion_session_token", accountDeletionSessionToken, 86400);
 }
 
 function deleteAccountDeletionTokenCookie() {
-	setCookieWithExpiration("account_deletion_token", "", 0);
+	setCookieWithExpiration("account_deletion_session_token", "", 0);
 }
 
-function setPasswordResetTokenCookie(passwordResetToken) {
-	setCookieWithExpiration("password_reset_token", passwordResetToken, 86400);
+function setPasswordResetTokenCookie(passwordResetSessionToken) {
+	setCookieWithExpiration("password_reset_session_token", passwordResetSessionToken, 86400);
 }
 
 function deletePasswordResetTokenCookie() {
-	setCookieWithExpiration("password_reset_token", "", 0);
+	setCookieWithExpiration("password_reset_session_token", "", 0);
 }
 
 function setCookieWithExpiration(name, value, maxAge) {

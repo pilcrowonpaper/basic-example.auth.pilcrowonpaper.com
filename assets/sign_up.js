@@ -48,7 +48,7 @@ async function handleSignUpFormSubmitEvent(event) {
 		return;
 	}
 
-	setSignupTokenCookie(actionResult.valuesJSONObject.signup_token);
+	setSignupAuthSessionTokenCookie(actionResult.valuesJSONObject.signup_session_token);
 
 	window.location.href = "/sign-up/verify-email-address";
 }

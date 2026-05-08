@@ -13,41 +13,21 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-type accountDeletionStruct struct {
+type accountDeletionSessionStruct struct {
 	id                   string
-	sessionId            string
+	authSessionId        string
 	secretHash           []byte
 	userIdentityVerified bool
 	createdAt            time.Time
 }
 
-func (accountDeletion *accountDeletionStruct) compareSecretAgainstHash(secret []byte) bool {
+func (accountDeletionSession *accountDeletionSessionStruct) compareSecretAgainstHash(secret []byte) bool {
 	hashed := hashSessionSecret(secret)
-	hashEqual := constantTimeCompare(hashed, accountDeletion.secretHash)
+	hashEqual := constantTimeCompare(hashed, accountDeletionSession.secretHash)
 	return hashEqual
 }
 
-func createAccountDeletionToken(accountDeletionId string, accountDeletionSecret []byte) string {
-	encodedAccountDeletionSecret := base64.StdEncoding.EncodeToString(accountDeletionSecret)
-	accountDeletionToken := accountDeletionId + "." + encodedAccountDeletionSecret
-	return accountDeletionToken
-}
-
-const accountDeletionTokenCookieName = "account_deletion_token"
-
-func (server *serverStruct) setBlankAccountDeletionTokenCookie(w http.ResponseWriter) {
-	cookie := &http.Cookie{
-		Name:     accountDeletionTokenCookieName,
-		Value:    "",
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   -1,
-		Path:     "/",
-		Secure:   server.https,
-	}
-	http.SetCookie(w, cookie)
-}
-
-func (server *serverStruct) createAccountDeletion(sessionId string) (accountDeletionStruct, []byte, error) {
+func (server *serverStruct) createAccountDeletion(authSessionId string) (accountDeletionSessionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
 	id := generateItemId()
@@ -55,9 +35,9 @@ func (server *serverStruct) createAccountDeletion(sessionId string) (accountDele
 	secret := generateSessionSecret()
 	secretHash := hashSessionSecret(secret)
 
-	accountDeletion := accountDeletionStruct{
+	accountDeletionSession := accountDeletionSessionStruct{
 		id:                   id,
-		sessionId:            sessionId,
+		authSessionId:        authSessionId,
 		secretHash:           secretHash,
 		userIdentityVerified: false,
 		createdAt:            nowSecondPrecision,
@@ -65,142 +45,148 @@ func (server *serverStruct) createAccountDeletion(sessionId string) (accountDele
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return accountDeletionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return accountDeletionSessionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		"INSERT INTO account_deletion (id, session_id, secret_hash, user_identity_verified, created_at) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO account_deletion_session (id, auth_session_id, secret_hash, user_identity_verified, created_at) VALUES (?, ?, ?, ?, ?)",
 		&sqlitex.ExecOptions{
 			Args: []any{
-				accountDeletion.id,
-				accountDeletion.sessionId,
-				accountDeletion.secretHash,
-				accountDeletion.userIdentityVerified,
-				accountDeletion.createdAt.Unix(),
+				accountDeletionSession.id,
+				accountDeletionSession.authSessionId,
+				accountDeletionSession.secretHash,
+				accountDeletionSession.userIdentityVerified,
+				accountDeletionSession.createdAt.Unix(),
 			},
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
-		return accountDeletionStruct{}, nil, errItemConflict
+		return accountDeletionSessionStruct{}, nil, errItemConflict
 	}
 	if err != nil {
-		return accountDeletionStruct{}, nil, fmt.Errorf("failed to insert into account_deletion table: %s", err.Error())
+		return accountDeletionSessionStruct{}, nil, fmt.Errorf("failed to insert into account_deletion_session table: %s", err.Error())
 	}
 
-	return accountDeletion, secret, nil
+	return accountDeletionSession, secret, nil
 }
 
-func (server *serverStruct) getAccountDeletion(accountDeletionId string) (accountDeletionStruct, error) {
-	accountDeletions := []accountDeletionStruct{}
+func (server *serverStruct) getAccountDeletion(accountDeletionSessionId string) (accountDeletionSessionStruct, error) {
+	accountDeletionSessions := []accountDeletionSessionStruct{}
 
 	databaseReadConnection, err := server.databaseReadConnectionPool.Take(context.Background())
 	if err != nil {
-		return accountDeletionStruct{}, fmt.Errorf("failed to take database read connection: %s", err.Error())
+		return accountDeletionSessionStruct{}, fmt.Errorf("failed to take database read connection: %s", err.Error())
 	}
 	err = sqlitex.Execute(
 		databaseReadConnection,
-		"SELECT session_id, secret_hash, user_identity_verified, created_at FROM account_deletion WHERE id = ?",
+		"SELECT auth_session_id, secret_hash, user_identity_verified, created_at FROM account_deletion_session WHERE id = ?",
 		&sqlitex.ExecOptions{
-			Args: []any{accountDeletionId},
+			Args: []any{accountDeletionSessionId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				secretHash := make([]byte, 32)
 
-				sessionId := stmt.ColumnText(0)
+				authSessionId := stmt.ColumnText(0)
 				stmt.ColumnBytes(1, secretHash)
 				userIdentityVerified := stmt.ColumnBool(2)
 				createdAt := time.Unix(stmt.ColumnInt64(3), 0)
 
-				accountDeletion := accountDeletionStruct{
-					id:                   accountDeletionId,
-					sessionId:            sessionId,
+				accountDeletionSession := accountDeletionSessionStruct{
+					id:                   accountDeletionSessionId,
+					authSessionId:        authSessionId,
 					secretHash:           secretHash,
 					userIdentityVerified: userIdentityVerified,
 					createdAt:            createdAt,
 				}
 
-				accountDeletions = append(accountDeletions, accountDeletion)
+				accountDeletionSessions = append(accountDeletionSessions, accountDeletionSession)
 				return nil
 			},
 		},
 	)
 	server.databaseReadConnectionPool.Put(databaseReadConnection)
 	if err != nil {
-		return accountDeletionStruct{}, fmt.Errorf("failed to select from account_deletion table: %s", err.Error())
+		return accountDeletionSessionStruct{}, fmt.Errorf("failed to select from account_deletion_session table: %s", err.Error())
 	}
 
-	if len(accountDeletions) < 1 {
-		return accountDeletionStruct{}, errItemNotFound
+	if len(accountDeletionSessions) < 1 {
+		return accountDeletionSessionStruct{}, errItemNotFound
 	}
 
-	accountDeletion := accountDeletions[0]
+	accountDeletionSession := accountDeletionSessions[0]
 
-	if time.Since(accountDeletion.createdAt) >= time.Hour {
-		return accountDeletionStruct{}, errItemNotFound
+	if time.Since(accountDeletionSession.createdAt) >= time.Hour {
+		return accountDeletionSessionStruct{}, errItemNotFound
 	}
 
-	return accountDeletion, nil
+	return accountDeletionSession, nil
 }
 
-var errInvalidAccountDeletionToken = errors.New("invalid account deletion token")
+var errInvalidAccountDeletionSessionToken = errors.New("invalid account deletion session token")
 
-func (server *serverStruct) validateAccountDeletionToken(accountDeletionToken string) (accountDeletionStruct, error) {
-	tokenParts := strings.Split(accountDeletionToken, ".")
+func (server *serverStruct) validateAccountDeletionSessionToken(accountDeletionSessionToken string) (accountDeletionSessionStruct, error) {
+	tokenParts := strings.Split(accountDeletionSessionToken, ".")
 	if len(tokenParts) != 2 {
-		return accountDeletionStruct{}, errInvalidAccountDeletionToken
+		return accountDeletionSessionStruct{}, errInvalidAccountDeletionSessionToken
 	}
-	accountDeletionId := tokenParts[0]
+	accountDeletionSessionId := tokenParts[0]
 	encodedSecret := tokenParts[1]
 	secret, err := base64.StdEncoding.DecodeString(encodedSecret)
 	if err != nil {
-		return accountDeletionStruct{}, errInvalidAccountDeletionToken
+		return accountDeletionSessionStruct{}, errInvalidAccountDeletionSessionToken
 	}
 
-	accountDeletion, err := server.getAccountDeletion(accountDeletionId)
+	accountDeletionSession, err := server.getAccountDeletion(accountDeletionSessionId)
 	if errors.Is(err, errItemNotFound) {
-		return accountDeletionStruct{}, errInvalidAccountDeletionToken
+		return accountDeletionSessionStruct{}, errInvalidAccountDeletionSessionToken
 	}
 	if err != nil {
-		return accountDeletionStruct{}, fmt.Errorf("failed to get account deletion: %s", err.Error())
+		return accountDeletionSessionStruct{}, fmt.Errorf("failed to get account deletion session: %s", err.Error())
 	}
 
-	secretValid := accountDeletion.compareSecretAgainstHash(secret)
+	secretValid := accountDeletionSession.compareSecretAgainstHash(secret)
 	if !secretValid {
-		return accountDeletionStruct{}, errInvalidAccountDeletionToken
+		return accountDeletionSessionStruct{}, errInvalidAccountDeletionSessionToken
 	}
 
-	return accountDeletion, nil
+	return accountDeletionSession, nil
 }
 
-func (server *serverStruct) validateRequestAccountDeletionToken(r *http.Request) (accountDeletionStruct, string, error) {
-	accountDeletionTokenCookie, err := r.Cookie(accountDeletionTokenCookieName)
-	if err != nil {
-		return accountDeletionStruct{}, "", errInvalidAccountDeletionToken
-	}
-	accountDeletionToken := accountDeletionTokenCookie.Value
+const accountDeletionSessionTokenCookieName = "account_deletion_session_token"
 
-	accountDeletion, err := server.validateAccountDeletionToken(accountDeletionToken)
-	if errors.Is(err, errInvalidAccountDeletionToken) {
-		return accountDeletionStruct{}, "", errInvalidAccountDeletionToken
+func (server *serverStruct) validateRequestAccountDeletionSessionToken(r *http.Request) (accountDeletionSessionStruct, string, error) {
+	accountDeletionSessionTokenCookie, err := r.Cookie(accountDeletionSessionTokenCookieName)
+	if err != nil {
+		return accountDeletionSessionStruct{}, "", errInvalidAccountDeletionSessionToken
+	}
+	accountDeletionSessionToken := accountDeletionSessionTokenCookie.Value
+
+	accountDeletionSession, err := server.validateAccountDeletionSessionToken(accountDeletionSessionToken)
+	if errors.Is(err, errInvalidAccountDeletionSessionToken) {
+		return accountDeletionSessionStruct{}, "", errInvalidAccountDeletionSessionToken
 	}
 	if err != nil {
-		return accountDeletionStruct{}, "", fmt.Errorf("failed to validate account deletion token: %s", err.Error())
+		return accountDeletionSessionStruct{}, "", fmt.Errorf("failed to validate account deletion token: %s", err.Error())
 	}
 
-	return accountDeletion, accountDeletionToken, nil
+	return accountDeletionSession, accountDeletionSessionToken, nil
 }
 
-func (server *serverStruct) setAccountDeletionAsUserIdentityVerified(accountDeletionId string) error {
+func (server *serverStruct) setBlankAccountDeletionSessionTokenCookie(w http.ResponseWriter) {
+	server.setBlankSessionTokenCookie(w, accountDeletionSessionTokenCookieName)
+}
+
+func (server *serverStruct) setAccountDeletionSessionAsUserIdentityVerified(accountDeletionSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE account_deletion SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
-		Args: []any{accountDeletionId},
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE account_deletion_session SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
+		Args: []any{accountDeletionSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to update account_deletion table: %s", err.Error())
+		return fmt.Errorf("failed to update account_deletion_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -210,14 +196,23 @@ func (server *serverStruct) setAccountDeletionAsUserIdentityVerified(accountDele
 	return nil
 }
 
-func (server *serverStruct) completeAccountDeletion(accountDeletionId string) error {
+func (server *serverStruct) completeAccountDeletion(accountDeletionSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM user WHERE id IN (SELECT session.user_id FROM session INNER JOIN account_deletion ON session.id = account_deletion.session_id WHERE account_deletion.id = ? AND account_deletion.user_identity_verified = 1)", &sqlitex.ExecOptions{
-		Args: []any{accountDeletionId},
-	})
+	err = sqlitex.Execute(
+		databaseWriteConnection,
+		`DELETE FROM user WHERE id IN (
+SELECT auth_session.user_id FROM auth_session
+INNER JOIN account_deletion_session ON auth_session.id = account_deletion_session.auth_session_id
+WHERE account_deletion_session.id = ?
+AND account_deletion_session.user_identity_verified = 1
+)`,
+		&sqlitex.ExecOptions{
+			Args: []any{accountDeletionSessionId},
+		},
+	)
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		return fmt.Errorf("failed to delete from user table: %s", err.Error())
@@ -230,17 +225,17 @@ func (server *serverStruct) completeAccountDeletion(accountDeletionId string) er
 	return nil
 }
 
-func (server *serverStruct) deleteAccountDeletion(accountDeletionId string) error {
+func (server *serverStruct) deleteAccountDeletionSession(accountDeletionSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM account_deletion WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{accountDeletionId},
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM account_deletion_session WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{accountDeletionSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to delete from account_deletion table: %s", err.Error())
+		return fmt.Errorf("failed to delete from account_deletion_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)

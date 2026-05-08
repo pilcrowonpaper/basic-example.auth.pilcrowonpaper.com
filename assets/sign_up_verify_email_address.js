@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const signupToken = pageDataJSONObject.signup_token;
+const signupAuthSessionToken = pageDataJSONObject.signup_session_token;
 
 const verifyVerificationCodeFormElement = document.getElementById("verify-verification-code-form");
 verifyVerificationCodeFormElement.addEventListener(
@@ -31,7 +31,7 @@ async function handleVerifyVerificationCodeFormSubmitEvent(event) {
 	const verificationCode = verificationCodeInputValue.replaceAll(" ", "").replaceAll("-", "");
 
 	const actionValuesJSONObject = {
-		signup_token: signupToken,
+		signup_session_token: signupAuthSessionToken,
 		verification_code: verificationCode,
 	};
 
@@ -49,8 +49,8 @@ async function handleVerifyVerificationCodeFormSubmitEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_signup_token") {
-			deleteSignupTokenCookie();
+		if (actionResult.errorCode === "invalid_signup_session_token") {
+			deleteSignupAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-up";
@@ -81,7 +81,7 @@ async function handleResendVerificationCodeButtonClickEvent(event) {
 	resendVerificationCodeButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		signup_token: signupToken,
+		signup_session_token: signupAuthSessionToken,
 	};
 
 	let actionResult;
@@ -98,8 +98,8 @@ async function handleResendVerificationCodeButtonClickEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_signup_token") {
-			deleteSignupTokenCookie();
+		if (actionResult.errorCode === "invalid_signup_session_token") {
+			deleteSignupAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-up";
@@ -126,7 +126,7 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		signup_token: signupToken,
+		signup_session_token: signupAuthSessionToken,
 	};
 
 	let actionResult;
@@ -140,8 +140,8 @@ async function handleCancelButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_signup_token") {
-			deleteSignupTokenCookie();
+		if (actionResult.errorCode === "invalid_signup_session_token") {
+			deleteSignupAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-up";
@@ -155,7 +155,7 @@ async function handleCancelButtonClickEvent() {
 		return;
 	}
 
-	deleteSignupTokenCookie();
+	deleteSignupAuthSessionTokenCookie();
 
 	window.location.href = "/sign-up";
 }

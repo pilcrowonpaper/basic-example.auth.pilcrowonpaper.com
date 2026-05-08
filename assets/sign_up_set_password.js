@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const signupToken = pageDataJSONObject.signup_token;
+const signupAuthSessionToken = pageDataJSONObject.signup_session_token;
 
 const setPasswordFormElement = document.getElementById("set-password-form");
 setPasswordFormElement.addEventListener("submit", handleSetPasswordFormSubmitEvent);
@@ -16,7 +16,7 @@ async function handleSetPasswordFormSubmitEvent(event) {
 	const formData = new FormData(event.target);
 	const password = formData.get("password");
 	const actionValuesJSONObject = {
-		signup_token: signupToken,
+		signup_session_token: signupAuthSessionToken,
 		password: password,
 	};
 
@@ -31,8 +31,8 @@ async function handleSetPasswordFormSubmitEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_signup_token") {
-			deleteSignupTokenCookie();
+		if (actionResult.errorCode === "invalid_signup_session_token") {
+			deleteSignupAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-up";
@@ -56,8 +56,8 @@ async function handleSetPasswordFormSubmitEvent(event) {
 		return;
 	}
 
-	deleteSignupTokenCookie();
-	setSessionTokenCookie(actionResult.valuesJSONObject.session_token);
+	deleteSignupAuthSessionTokenCookie();
+	setAuthSessionTokenCookie(actionResult.valuesJSONObject.auth_session_token);
 
 	window.location.href = "/account";
 }
@@ -66,7 +66,7 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		signup_token: signupToken,
+		signup_session_token: signupAuthSessionToken,
 	};
 
 	let actionResult;
@@ -80,8 +80,8 @@ async function handleCancelButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_signup_token") {
-			deleteSignupTokenCookie();
+		if (actionResult.errorCode === "invalid_signup_session_token") {
+			deleteSignupAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-up";
@@ -95,7 +95,7 @@ async function handleCancelButtonClickEvent() {
 		return;
 	}
 
-	deleteSignupTokenCookie();
+	deleteSignupAuthSessionTokenCookie();
 
 	window.location.href = "/sign-up";
 }

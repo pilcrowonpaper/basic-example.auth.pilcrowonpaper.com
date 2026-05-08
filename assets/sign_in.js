@@ -54,7 +54,7 @@ async function handleSignInFormSubmitEvent(event) {
 		return;
 	}
 
-	setSessionTokenCookie(actionResult.valuesJSONObject.session_token);
+	setAuthSessionTokenCookie(actionResult.valuesJSONObject.auth_session_token);
 
-	window.location.href = "/sign-up/verify-email-address";
+	window.location.href = "/account";
 }

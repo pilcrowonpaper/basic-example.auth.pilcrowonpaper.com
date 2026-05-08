@@ -69,9 +69,9 @@ func (server *serverStruct) startSignupAction(requestId string, clientIPAddress 
 		return "", errorCodeRateLimited
 	}
 
-	signup, signupSecret, err := server.createSignup(emailAddress)
+	signup, signupSecret, err := server.createSignupSession(emailAddress)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create signup: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to create signup session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartSignup, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
@@ -87,30 +87,30 @@ func (server *serverStruct) startSignupAction(requestId string, clientIPAddress 
 
 	server.logRequestEmail(requestId, clientIPAddress, signup.emailAddress, emailTypeSignupEmailAddressVerificationCode)
 
-	signupToken := createSignupToken(signup.id, signupSecret)
+	signupAuthSessionToken := createSessionToken(signup.id, signupSecret)
 
-	return signupToken, ""
+	return signupAuthSessionToken, ""
 }
 
-func (server *serverStruct) cancelSignupAction(requestId string, clientIPAddress string, signupToken string) string {
+func (server *serverStruct) cancelSignupAction(requestId string, clientIPAddress string, signupAuthSessionToken string) string {
 	const (
-		errorCodeInvalidSignupToken = "invalid_signup_token"
-		errorCodeUnexpectedError    = "unexpected_error"
+		errorCodeInvalidSignupAuthSessionToken = "invalid_signup_session_token"
+		errorCodeUnexpectedError               = "unexpected_error"
 	)
 
-	signup, err := server.validateSignupToken(signupToken)
-	if errors.Is(err, errInvalidSignupToken) {
-		return errorCodeInvalidSignupToken
+	signup, err := server.validateSignupAuthSessionToken(signupAuthSessionToken)
+	if errors.Is(err, errInvalidSignupAuthSessionToken) {
+		return errorCodeInvalidSignupAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate signup token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate signup session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelSignup, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	err = server.deleteSignup(signup.id)
+	err = server.deleteSignupSession(signup.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to delete signup: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to delete signup session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelSignup, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -118,20 +118,20 @@ func (server *serverStruct) cancelSignupAction(requestId string, clientIPAddress
 	return ""
 }
 
-func (server *serverStruct) sendSignupEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, signupToken string) string {
+func (server *serverStruct) sendSignupEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, signupAuthSessionToken string) string {
 	const (
-		errorCodeInvalidSignupToken          = "invalid_signup_token"
-		errorCodeEmailAddressAlreadyVerified = "email_address_already_verified"
-		errorCodeRateLimited                 = "rate_limited"
-		errorCodeUnexpectedError             = "unexpected_error"
+		errorCodeInvalidSignupAuthSessionToken = "invalid_signup_session_token"
+		errorCodeEmailAddressAlreadyVerified   = "email_address_already_verified"
+		errorCodeRateLimited                   = "rate_limited"
+		errorCodeUnexpectedError               = "unexpected_error"
 	)
 
-	signup, err := server.validateSignupToken(signupToken)
-	if errors.Is(err, errInvalidSignupToken) {
-		return errorCodeInvalidSignupToken
+	signup, err := server.validateSignupAuthSessionToken(signupAuthSessionToken)
+	if errors.Is(err, errInvalidSignupAuthSessionToken) {
+		return errorCodeInvalidSignupAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate signup token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate signup session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSendSignupEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -157,21 +157,21 @@ func (server *serverStruct) sendSignupEmailAddressVerificationCodeAction(request
 	return ""
 }
 
-func (server *serverStruct) verifySignupEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, signupToken string, verificationCode string) string {
+func (server *serverStruct) verifySignupEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, signupAuthSessionToken string, verificationCode string) string {
 	const (
-		errorCodeInvalidSignupToken          = "invalid_signup_token"
-		errorCodeEmailAddressAlreadyVerified = "email_address_already_verified"
-		errorCodeIncorrectVerificationCode   = "incorrect_verification_code"
-		errorCodeRateLimited                 = "rate_limited"
-		errorCodeUnexpectedError             = "unexpected_error"
+		errorCodeInvalidSignupAuthSessionToken = "invalid_signup_session_token"
+		errorCodeEmailAddressAlreadyVerified   = "email_address_already_verified"
+		errorCodeIncorrectVerificationCode     = "incorrect_verification_code"
+		errorCodeRateLimited                   = "rate_limited"
+		errorCodeUnexpectedError               = "unexpected_error"
 	)
 
-	signup, err := server.validateSignupToken(signupToken)
-	if errors.Is(err, errInvalidSignupToken) {
-		return errorCodeInvalidSignupToken
+	signup, err := server.validateSignupAuthSessionToken(signupAuthSessionToken)
+	if errors.Is(err, errInvalidSignupAuthSessionToken) {
+		return errorCodeInvalidSignupAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate signup token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate signup session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifySignupEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -191,9 +191,9 @@ func (server *serverStruct) verifySignupEmailAddressVerificationCodeAction(reque
 		return errorCodeIncorrectVerificationCode
 	}
 
-	err = server.setSignupAsEmailAddressVerified(signup.id)
+	err = server.setSignupSessionAsEmailAddressVerified(signup.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set signup as email address verified: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set signup session as email address verified: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifySignupEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -203,23 +203,23 @@ func (server *serverStruct) verifySignupEmailAddressVerificationCodeAction(reque
 	return ""
 }
 
-func (server *serverStruct) setSignupPasswordAction(requestId string, clientIPAddress string, signupToken string, password string) (string, string) {
+func (server *serverStruct) setSignupPasswordAction(requestId string, clientIPAddress string, signupAuthSessionToken string, password string) (string, string) {
 	const (
-		errorCodeInvalidSignupToken      = "invalid_signup_token"
-		errorCodeEmailAddressNotVerified = "email_address_not_verified"
-		errorCodeEmailAddressAlreadyUsed = "email_address_already_used"
-		errorCodeInvalidPassword         = "invalid_password"
-		errorCodeWeakPassword            = "weak_password"
-		errorCodeConflict                = "conflict"
-		errorCodeUnexpectedError         = "unexpected_error"
+		errorCodeInvalidSignupAuthSessionToken = "invalid_signup_session_token"
+		errorCodeEmailAddressNotVerified       = "email_address_not_verified"
+		errorCodeEmailAddressAlreadyUsed       = "email_address_already_used"
+		errorCodeInvalidPassword               = "invalid_password"
+		errorCodeWeakPassword                  = "weak_password"
+		errorCodeConflict                      = "conflict"
+		errorCodeUnexpectedError               = "unexpected_error"
 	)
 
-	signup, err := server.validateSignupToken(signupToken)
-	if errors.Is(err, errInvalidSignupToken) {
-		return "", errorCodeInvalidSignupToken
+	signup, err := server.validateSignupAuthSessionToken(signupAuthSessionToken)
+	if errors.Is(err, errInvalidSignupAuthSessionToken) {
+		return "", errorCodeInvalidSignupAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate signup token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate signup session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetSignupPassword, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
@@ -252,21 +252,21 @@ func (server *serverStruct) setSignupPasswordAction(requestId string, clientIPAd
 		return "", errorCodeEmailAddressAlreadyUsed
 	}
 
-	user, session, sessionSecret, err := server.completeSignup(signup.id, password)
+	user, authSession, authSessionSecret, err := server.completeSignup(signup.id, password)
 	if errors.Is(err, errItemNotFound) || errors.Is(err, errItemConflict) {
 		return "", errorCodeConflict
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to complete signup: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to complete signup session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetSignupPassword, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logSignupCompletedRequestEvent(requestId, clientIPAddress, signup.id, signup.emailAddress, user.id, session.id)
+	server.logSignupCompletedRequestEvent(requestId, clientIPAddress, signup.id, signup.emailAddress, user.id, authSession.id)
 
-	sessionToken := createSessionToken(session.id, sessionSecret)
+	authSessionToken := createSessionToken(authSession.id, authSessionSecret)
 
-	return sessionToken, ""
+	return authSessionToken, ""
 }
 
 func (server *serverStruct) signInAction(requestId string, clientIPAddress string, emailAddress string, password string) (string, string) {
@@ -305,14 +305,14 @@ func (server *serverStruct) signInAction(requestId string, clientIPAddress strin
 		return "", errorCodeIncorrectPassword
 	}
 
-	session, sessionSecret, err := server.createSession(user.id)
+	authSession, authSessionSecret, err := server.createAuthSession(user.id)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSignIn, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logSignedInRequestEvent(requestId, clientIPAddress, user.id, session.id)
+	server.logSignedInRequestEvent(requestId, clientIPAddress, user.id, authSession.id)
 
 	err = server.sendSignedInEmail(user.emailAddress)
 	if err != nil {
@@ -323,20 +323,20 @@ func (server *serverStruct) signInAction(requestId string, clientIPAddress strin
 
 	server.logRequestEmail(requestId, clientIPAddress, user.emailAddress, emailTypeSignedInNotification)
 
-	sessionToken := createSessionToken(session.id, sessionSecret)
+	authSessionToken := createSessionToken(authSession.id, authSessionSecret)
 
-	return sessionToken, ""
+	return authSessionToken, ""
 }
 
-func (server *serverStruct) signOutAction(requestId string, clientIPAddress string, sessionToken string) string {
+func (server *serverStruct) signOutAction(requestId string, clientIPAddress string, SessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken = "invalid_session_token"
-		errorCodeUnexpectedError     = "unexpected_error"
+		errorCodeInvalidAuthSessionToken = "invalid_auth_session_token"
+		errorCodeUnexpectedError         = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -344,9 +344,9 @@ func (server *serverStruct) signOutAction(requestId string, clientIPAddress stri
 		return errorCodeUnexpectedError
 	}
 
-	err = server.deleteSession(session.id)
+	err = server.deleteAuthSession(authSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to delete session: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to delete auth session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSignOut, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -354,15 +354,15 @@ func (server *serverStruct) signOutAction(requestId string, clientIPAddress stri
 	return ""
 }
 
-func (server *serverStruct) signOutAllDevicesAction(requestId string, clientIPAddress string, sessionToken string) string {
+func (server *serverStruct) signOutAllDevicesAction(requestId string, clientIPAddress string, SessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken = "invalid_session_token"
-		errorCodeUnexpectedError     = "unexpected_error"
+		errorCodeInvalidAuthSessionToken = "invalid_auth_session_token"
+		errorCodeUnexpectedError         = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -370,7 +370,7 @@ func (server *serverStruct) signOutAllDevicesAction(requestId string, clientIPAd
 		return errorCodeUnexpectedError
 	}
 
-	err = server.deleteUserSessions(session.userId)
+	err = server.deleteUserAuthSessions(authSession.userId)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to delete user sessions: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSignOutAllDevices, errorMessage)
@@ -380,15 +380,15 @@ func (server *serverStruct) signOutAllDevicesAction(requestId string, clientIPAd
 	return ""
 }
 
-func (server *serverStruct) startPasswordUpdateAction(requestId string, clientIPAddress string, sessionToken string) (string, string) {
+func (server *serverStruct) startPasswordUpdateSessionAction(requestId string, clientIPAddress string, SessionToken string) (string, string) {
 	const (
-		errorCodeInvalidSessionToken = "invalid_session_token"
-		errorCodeUnexpectedError     = "unexpected_error"
+		errorCodeInvalidAuthSessionToken = "invalid_auth_session_token"
+		errorCodeUnexpectedError         = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return "", errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return "", errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -396,31 +396,31 @@ func (server *serverStruct) startPasswordUpdateAction(requestId string, clientIP
 		return "", errorCodeUnexpectedError
 	}
 
-	passwordUpdate, passwordUpdateSecret, err := server.createPasswordUpdate(session.id)
+	passwordUpdateSession, passwordUpdateSessionSecret, err := server.createPasswordUpdateSession(authSession.id)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create password update: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartPasswordUpdate, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logPasswordUpdateStartedRequestEvent(requestId, clientIPAddress, session.id, session.userId, passwordUpdate.id)
+	server.logPasswordUpdateStartedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, passwordUpdateSession.id)
 
-	passwordUpdateToken := createPasswordUpdateToken(passwordUpdate.id, passwordUpdateSecret)
+	passwordUpdateSessionToken := createSessionToken(passwordUpdateSession.id, passwordUpdateSessionSecret)
 
-	return passwordUpdateToken, ""
+	return passwordUpdateSessionToken, ""
 }
 
-func (server *serverStruct) cancelPasswordUpdateAction(requestId string, clientIPAddress string, sessionToken string, passwordUpdateToken string) string {
+func (server *serverStruct) cancelPasswordUpdateSessionAction(requestId string, clientIPAddress string, SessionToken string, passwordUpdateSessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken        = "invalid_session_token"
-		errorCodeInvalidPasswordUpdateToken = "invalid_password_update_token"
-		errorCodeSessionMismatch            = "session_mismatch"
-		errorCodeUnexpectedError            = "unexpected_error"
+		errorCodeInvalidAuthSessionToken           = "invalid_auth_session_token"
+		errorCodeInvalidPasswordUpdateSessionToken = "invalid_password_update_session_token"
+		errorCodeSessionMismatch                   = "session_mismatch"
+		errorCodeUnexpectedError                   = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -428,23 +428,23 @@ func (server *serverStruct) cancelPasswordUpdateAction(requestId string, clientI
 		return errorCodeUnexpectedError
 	}
 
-	passwordUpdate, err := server.validatePasswordUpdateToken(passwordUpdateToken)
-	if errors.Is(err, errInvalidPasswordUpdateToken) {
-		return errorCodeInvalidSessionToken
+	passwordUpdateSession, err := server.validatePasswordUpdateSessionToken(passwordUpdateSessionToken)
+	if errors.Is(err, errInvalidPasswordUpdateSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelPasswordUpdate, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if passwordUpdate.sessionId != session.id {
+	if passwordUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	err = server.deletePasswordUpdate(passwordUpdate.id)
+	err = server.deletePasswordUpdateSession(passwordUpdateSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to delete password update: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to delete password update session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelPasswordUpdate, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -452,20 +452,20 @@ func (server *serverStruct) cancelPasswordUpdateAction(requestId string, clientI
 	return ""
 }
 
-func (server *serverStruct) verifyPasswordUpdateUserPasswordAction(requestId string, clientIPAddress string, sessionToken string, passwordUpdateToken string, password string) string {
+func (server *serverStruct) verifyPasswordUpdateSessionUserPasswordAction(requestId string, clientIPAddress string, SessionToken string, passwordUpdateSessionToken string, password string) string {
 	const (
-		errorCodeInvalidSessionToken         = "invalid_session_token"
-		errorCodeInvalidPasswordUpdateToken  = "invalid_password_update_token"
-		errorCodeSessionMismatch             = "session_mismatch"
-		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
-		errorCodeIncorrectPassword           = "incorrect_password"
-		errorCodeRateLimited                 = "rate_limited"
-		errorCodeUnexpectedError             = "unexpected_error"
+		errorCodeInvalidAuthSessionToken           = "invalid_auth_session_token"
+		errorCodeInvalidPasswordUpdateSessionToken = "invalid_password_update_session_token"
+		errorCodeSessionMismatch                   = "session_mismatch"
+		errorCodeUserIdentityAlreadyVerified       = "user_identity_already_verified"
+		errorCodeIncorrectPassword                 = "incorrect_password"
+		errorCodeRateLimited                       = "rate_limited"
+		errorCodeUnexpectedError                   = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -473,27 +473,27 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordAction(requestId str
 		return errorCodeUnexpectedError
 	}
 
-	passwordUpdate, err := server.validatePasswordUpdateToken(passwordUpdateToken)
-	if errors.Is(err, errInvalidPasswordUpdateToken) {
-		return errorCodeInvalidSessionToken
+	passwordUpdateSession, err := server.validatePasswordUpdateSessionToken(passwordUpdateSessionToken)
+	if errors.Is(err, errInvalidPasswordUpdateSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordUpdateUserPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if passwordUpdate.sessionId != session.id {
+	if passwordUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if passwordUpdate.userIdentityVerified {
+	if passwordUpdateSession.userIdentityVerified {
 		return errorCodeUserIdentityAlreadyVerified
 	}
 
-	user, err := server.getUser(session.userId)
+	user, err := server.getUser(authSession.userId)
 	if errors.Is(err, errItemNotFound) {
-		return errorCodeInvalidSessionToken
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
@@ -509,15 +509,15 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordAction(requestId str
 	passwordHash := server.hashUserPassword(password, user.passwordSalt)
 	passwordCorrect := constantTimeCompare(user.passwordHash, passwordHash)
 	if !passwordCorrect {
-		server.logPasswordUpdateUserPasswordVerificationFailedRequestEvent(requestId, clientIPAddress, session.id, session.userId, passwordUpdate.id)
+		server.logPasswordUpdateUserPasswordVerificationFailedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, passwordUpdateSession.id)
 		return errorCodeIncorrectPassword
 	}
 
-	server.logPasswordUpdateUserPasswordVerifiedRequestEvent(requestId, clientIPAddress, session.id, session.userId, passwordUpdate.id)
+	server.logPasswordUpdateUserPasswordVerifiedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, passwordUpdateSession.id)
 
-	err = server.setPasswordUpdateAsUserIdentityVerified(passwordUpdate.id)
+	err = server.setPasswordUpdateSessionAsUserIdentityVerified(passwordUpdateSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set password update as user identity verified: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set password update session as user identity verified: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordUpdateUserPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -525,21 +525,21 @@ func (server *serverStruct) verifyPasswordUpdateUserPasswordAction(requestId str
 	return ""
 }
 
-func (server *serverStruct) setPasswordUpdateNewPasswordAction(requestId string, clientIPAddress string, sessionToken string, passwordUpdateToken string, newPassword string) string {
+func (server *serverStruct) setPasswordUpdateSessionNewPasswordAction(requestId string, clientIPAddress string, SessionToken string, passwordUpdateSessionToken string, newPassword string) string {
 	const (
-		errorCodeInvalidSessionToken        = "invalid_session_token"
-		errorCodeInvalidPasswordUpdateToken = "invalid_password_update_token"
-		errorCodeSessionMismatch            = "session_mismatch"
-		errorCodeUserIdentityNotVerified    = "user_identity_not_verified"
-		errorCodeInvalidPassword            = "invalid_password"
-		errorCodeWeakPassword               = "weak_password"
-		errorCodeConflict                   = "conflict"
-		errorCodeUnexpectedError            = "unexpected_error"
+		errorCodeInvalidAuthSessionToken           = "invalid_auth_session_token"
+		errorCodeInvalidPasswordUpdateSessionToken = "invalid_password_update_session_token"
+		errorCodeSessionMismatch                   = "session_mismatch"
+		errorCodeUserIdentityNotVerified           = "user_identity_not_verified"
+		errorCodeInvalidPassword                   = "invalid_password"
+		errorCodeWeakPassword                      = "weak_password"
+		errorCodeConflict                          = "conflict"
+		errorCodeUnexpectedError                   = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -547,21 +547,21 @@ func (server *serverStruct) setPasswordUpdateNewPasswordAction(requestId string,
 		return errorCodeUnexpectedError
 	}
 
-	passwordUpdate, err := server.validatePasswordUpdateToken(passwordUpdateToken)
-	if errors.Is(err, errInvalidPasswordUpdateToken) {
-		return errorCodeInvalidSessionToken
+	passwordUpdateSession, err := server.validatePasswordUpdateSessionToken(passwordUpdateSessionToken)
+	if errors.Is(err, errInvalidPasswordUpdateSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordUpdateNewPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if passwordUpdate.sessionId != session.id {
+	if passwordUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if !passwordUpdate.userIdentityVerified {
+	if !passwordUpdateSession.userIdentityVerified {
 		return errorCodeUserIdentityNotVerified
 	}
 
@@ -579,14 +579,14 @@ func (server *serverStruct) setPasswordUpdateNewPasswordAction(requestId string,
 		return errorCodeWeakPassword
 	}
 
-	user, err := server.getUser(session.userId)
+	user, err := server.getUser(authSession.userId)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordUpdateNewPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	err = server.completePasswordUpdate(passwordUpdate.id, newPassword)
+	err = server.completePasswordUpdateSession(passwordUpdateSession.id, newPassword)
 	if errors.Is(err, errItemNotFound) || errors.Is(err, errItemConflict) {
 		return errorCodeConflict
 	}
@@ -596,7 +596,7 @@ func (server *serverStruct) setPasswordUpdateNewPasswordAction(requestId string,
 		return errorCodeUnexpectedError
 	}
 
-	server.logPasswordUpdateCompletedRequestEvent(requestId, clientIPAddress, session.id, session.userId, passwordUpdate.id)
+	server.logPasswordUpdateCompletedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, passwordUpdateSession.id)
 
 	err = server.sendPasswordUpdatedEmail(user.emailAddress)
 	if err != nil {
@@ -610,15 +610,15 @@ func (server *serverStruct) setPasswordUpdateNewPasswordAction(requestId string,
 	return ""
 }
 
-func (server *serverStruct) startEmailAddressUpdateAction(requestId string, clientIPAddress string, sessionToken string) (string, string) {
+func (server *serverStruct) startEmailAddressUpdateAction(requestId string, clientIPAddress string, SessionToken string) (string, string) {
 	const (
-		errorCodeInvalidSessionToken = "invalid_session_token"
-		errorCodeUnexpectedError     = "unexpected_error"
+		errorCodeInvalidAuthSessionToken = "invalid_auth_session_token"
+		errorCodeUnexpectedError         = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return "", errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return "", errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -626,31 +626,31 @@ func (server *serverStruct) startEmailAddressUpdateAction(requestId string, clie
 		return "", errorCodeUnexpectedError
 	}
 
-	emailAddressUpdate, emailAddressUpdateSecret, err := server.createEmailAddressUpdate(session.id)
+	emailAddressUpdateSession, emailAddressUpdateSessionSecret, err := server.createEmailAddressUpdate(authSession.id)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create email address update: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelEmailAddressUpdate, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logEmailAddressUpdateStartedRequestEvent(requestId, clientIPAddress, session.id, session.userId, emailAddressUpdate.id)
+	server.logEmailAddressUpdateStartedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, emailAddressUpdateSession.id)
 
-	emailAddressUpdateToken := createEmailAddressUpdateToken(emailAddressUpdate.id, emailAddressUpdateSecret)
+	emailAddressUpdateSessionToken := createSessionToken(emailAddressUpdateSession.id, emailAddressUpdateSessionSecret)
 
-	return emailAddressUpdateToken, ""
+	return emailAddressUpdateSessionToken, ""
 }
 
-func (server *serverStruct) cancelEmailAddressUpdateAction(requestId string, clientIPAddress string, sessionToken string, emailAddressUpdateToken string) string {
+func (server *serverStruct) cancelEmailAddressUpdateAction(requestId string, clientIPAddress string, SessionToken string, emailAddressUpdateSessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken            = "invalid_session_token"
-		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_token"
+		errorCodeInvalidAuthSessionToken        = "invalid_auth_session_token"
+		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_session_token"
 		errorCodeSessionMismatch                = "session_mismatch"
 		errorCodeUnexpectedError                = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -658,23 +658,23 @@ func (server *serverStruct) cancelEmailAddressUpdateAction(requestId string, cli
 		return errorCodeUnexpectedError
 	}
 
-	emailAddressUpdate, err := server.validateEmailAddressUpdateToken(emailAddressUpdateToken)
+	emailAddressUpdateSession, err := server.validateEmailAddressUpdateToken(emailAddressUpdateSessionToken)
 	if errors.Is(err, errInvalidEmailAddressUpdateToken) {
 		return errorCodeInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelEmailAddressUpdate, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if emailAddressUpdate.sessionId != session.id {
+	if emailAddressUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	err = server.deleteEmailAddressUpdate(emailAddressUpdate.id)
+	err = server.deleteEmailAddressUpdate(emailAddressUpdateSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to delete email address update: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to delete email address update session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelEmailAddressUpdate, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -682,10 +682,10 @@ func (server *serverStruct) cancelEmailAddressUpdateAction(requestId string, cli
 	return ""
 }
 
-func (server *serverStruct) verifyEmailAddressUpdateUserPasswordAction(requestId string, clientIPAddress string, sessionToken string, emailAddressUpdateToken string, password string) string {
+func (server *serverStruct) verifyEmailAddressUpdateUserPasswordAction(requestId string, clientIPAddress string, SessionToken string, emailAddressUpdateSessionToken string, password string) string {
 	const (
-		errorCodeInvalidSessionToken            = "invalid_session_token"
-		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_token"
+		errorCodeInvalidAuthSessionToken        = "invalid_auth_session_token"
+		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_session_token"
 		errorCodeSessionMismatch                = "session_mismatch"
 		errorCodeUserIdentityAlreadyVerified    = "user_identity_already_verified"
 		errorCodeIncorrectPassword              = "incorrect_password"
@@ -694,9 +694,9 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordAction(requestId
 		errorCodeUnexpectedError                = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -704,25 +704,25 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordAction(requestId
 		return errorCodeUnexpectedError
 	}
 
-	emailAddressUpdate, err := server.validateEmailAddressUpdateToken(emailAddressUpdateToken)
+	emailAddressUpdateSession, err := server.validateEmailAddressUpdateToken(emailAddressUpdateSessionToken)
 	if errors.Is(err, errInvalidEmailAddressUpdateToken) {
 		return errorCodeInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyEmailAddressUpdateUserPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if emailAddressUpdate.sessionId != session.id {
+	if emailAddressUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if emailAddressUpdate.userIdentityVerified {
+	if emailAddressUpdateSession.userIdentityVerified {
 		return errorCodeUserIdentityAlreadyVerified
 	}
 
-	user, err := server.getUser(session.userId)
+	user, err := server.getUser(authSession.userId)
 	if errors.Is(err, errItemNotFound) {
 		return errorCodeConflict
 	}
@@ -740,15 +740,15 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordAction(requestId
 	passwordHash := server.hashUserPassword(password, user.passwordSalt)
 	passwordCorrect := constantTimeCompare(user.passwordHash, passwordHash)
 	if !passwordCorrect {
-		server.logEmailAddressUpdateUserPasswordVerificationFailedRequestEvent(requestId, clientIPAddress, session.id, session.userId, emailAddressUpdate.id)
+		server.logEmailAddressUpdateUserPasswordVerificationFailedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, emailAddressUpdateSession.id)
 		return errorCodeIncorrectPassword
 	}
 
-	server.logEmailAddressUpdateUserPasswordVerifiedRequestEvent(requestId, clientIPAddress, session.id, session.userId, emailAddressUpdate.id)
+	server.logEmailAddressUpdateUserPasswordVerifiedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, emailAddressUpdateSession.id)
 
-	err = server.setEmailAddressUpdateAsUserIdentityVerified(emailAddressUpdate.id)
+	err = server.setEmailAddressUpdateAsUserIdentityVerified(emailAddressUpdateSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set email address update as user identity verified: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set email address update session as user identity verified: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyEmailAddressUpdateUserPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -756,10 +756,10 @@ func (server *serverStruct) verifyEmailAddressUpdateUserPasswordAction(requestId
 	return ""
 }
 
-func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId string, clientIPAddress string, sessionToken string, emailAddressUpdateToken string, newEmailAddress string) string {
+func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId string, clientIPAddress string, SessionToken string, emailAddressUpdateSessionToken string, newEmailAddress string) string {
 	const (
-		errorCodeInvalidSessionToken            = "invalid_session_token"
-		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_token"
+		errorCodeInvalidAuthSessionToken        = "invalid_auth_session_token"
+		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_session_token"
 		errorCodeSessionMismatch                = "session_mismatch"
 		errorCodeUserIdentityNotVerified        = "user_identity_not_verified"
 		errorCodeNewEmailAddressAlreadySet      = "new_email_address_already_set"
@@ -769,9 +769,9 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId
 		errorCodeUnexpectedError                = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -779,25 +779,25 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId
 		return errorCodeUnexpectedError
 	}
 
-	emailAddressUpdate, err := server.validateEmailAddressUpdateToken(emailAddressUpdateToken)
+	emailAddressUpdateSession, err := server.validateEmailAddressUpdateToken(emailAddressUpdateSessionToken)
 	if errors.Is(err, errInvalidEmailAddressUpdateToken) {
 		return errorCodeInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetEmailAddressUpdateNewEmailAddress, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if emailAddressUpdate.sessionId != session.id {
+	if emailAddressUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if !emailAddressUpdate.userIdentityVerified {
+	if !emailAddressUpdateSession.userIdentityVerified {
 		return errorCodeUserIdentityNotVerified
 	}
 
-	if emailAddressUpdate.newEmailAddressDefined {
+	if emailAddressUpdateSession.newEmailAddressDefined {
 		return errorCodeNewEmailAddressAlreadySet
 	}
 
@@ -820,9 +820,9 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId
 		return errorCodeRateLimited
 	}
 
-	newEmailAddressVerificationCode, err := server.setEmailAddressUpdateNewEmailAddress(emailAddressUpdate.id, newEmailAddress)
+	newEmailAddressVerificationCode, err := server.setEmailAddressUpdateNewEmailAddress(emailAddressUpdateSession.id, newEmailAddress)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set email address update new email address: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set email address update session new email address: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetEmailAddressUpdateNewEmailAddress, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -839,10 +839,10 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddressAction(requestId
 	return ""
 }
 
-func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, sessionToken string, emailAddressUpdateToken string) string {
+func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, SessionToken string, emailAddressUpdateSessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken            = "invalid_session_token"
-		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_token"
+		errorCodeInvalidAuthSessionToken        = "invalid_auth_session_token"
+		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_session_token"
 		errorCodeSessionMismatch                = "session_mismatch"
 		errorCodeUserIdentityNotVerified        = "user_identity_not_verified"
 		errorCodeNewEmailAddressNotSet          = "new_email_address_not_set"
@@ -851,9 +851,9 @@ func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCod
 		errorCodeUnexpectedError                = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -861,54 +861,54 @@ func (server *serverStruct) sendEmailAddressUpdateNewEmailAddressVerificationCod
 		return errorCodeUnexpectedError
 	}
 
-	emailAddressUpdate, err := server.validateEmailAddressUpdateToken(emailAddressUpdateToken)
+	emailAddressUpdateSession, err := server.validateEmailAddressUpdateToken(emailAddressUpdateSessionToken)
 	if errors.Is(err, errInvalidEmailAddressUpdateToken) {
 		return errorCodeInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSendEmailAddressUpdateNewEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if emailAddressUpdate.sessionId != session.id {
+	if emailAddressUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if !emailAddressUpdate.userIdentityVerified {
+	if !emailAddressUpdateSession.userIdentityVerified {
 		return errorCodeUserIdentityNotVerified
 	}
 
-	if !emailAddressUpdate.newEmailAddressDefined {
+	if !emailAddressUpdateSession.newEmailAddressDefined {
 		return errorCodeNewEmailAddressNotSet
 	}
-	if !emailAddressUpdate.newEmailAddressVerificationCodeDefined {
+	if !emailAddressUpdateSession.newEmailAddressVerificationCodeDefined {
 		errorMessage := "new email address verification code not defined"
 		server.logActionInternalError(requestId, clientIPAddress, actionSendEmailAddressUpdateNewEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	rateLimitAllowed := server.emailRateLimit.Consume(emailAddressUpdate.newEmailAddress)
+	rateLimitAllowed := server.emailRateLimit.Consume(emailAddressUpdateSession.newEmailAddress)
 	if !rateLimitAllowed {
 		return errorCodeRateLimited
 	}
 
-	err = server.sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddressUpdate.newEmailAddress, emailAddressUpdate.newEmailAddressVerificationCode)
+	err = server.sendEmailAddressUpdateNewEmailAddressVerificationCodeEmail(emailAddressUpdateSession.newEmailAddress, emailAddressUpdateSession.newEmailAddressVerificationCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send email address update new email address verification code email: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSendEmailAddressUpdateNewEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	server.logRequestEmail(requestId, clientIPAddress, emailAddressUpdate.newEmailAddress, emailTypeEmailAddressUpdateNewEmailAddressVerificationCode)
+	server.logRequestEmail(requestId, clientIPAddress, emailAddressUpdateSession.newEmailAddress, emailTypeEmailAddressUpdateNewEmailAddressVerificationCode)
 
 	return ""
 }
 
-func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, sessionToken string, emailAddressUpdateToken string, verificationCode string) string {
+func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationCodeAction(requestId string, clientIPAddress string, SessionToken string, emailAddressUpdateSessionToken string, verificationCode string) string {
 	const (
-		errorCodeInvalidSessionToken            = "invalid_session_token"
-		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_token"
+		errorCodeInvalidAuthSessionToken        = "invalid_auth_session_token"
+		errorCodeInvalidEmailAddressUpdateToken = "invalid_email_address_update_session_token"
 		errorCodeSessionMismatch                = "session_mismatch"
 		errorCodeUserIdentityNotVerified        = "user_identity_not_verified"
 		errorCodeNewEmailAddressNotSet          = "new_email_address_not_set"
@@ -919,9 +919,9 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationC
 		errorCodeUnexpectedError                = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -929,46 +929,46 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationC
 		return errorCodeUnexpectedError
 	}
 
-	emailAddressUpdate, err := server.validateEmailAddressUpdateToken(emailAddressUpdateToken)
+	emailAddressUpdateSession, err := server.validateEmailAddressUpdateToken(emailAddressUpdateSessionToken)
 	if errors.Is(err, errInvalidEmailAddressUpdateToken) {
 		return errorCodeInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if emailAddressUpdate.sessionId != session.id {
+	if emailAddressUpdateSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if !emailAddressUpdate.userIdentityVerified {
+	if !emailAddressUpdateSession.userIdentityVerified {
 		return errorCodeUserIdentityNotVerified
 	}
 
-	if !emailAddressUpdate.newEmailAddressDefined {
+	if !emailAddressUpdateSession.newEmailAddressDefined {
 		return errorCodeNewEmailAddressNotSet
 	}
 
-	if !emailAddressUpdate.newEmailAddressVerificationCodeDefined {
+	if !emailAddressUpdateSession.newEmailAddressVerificationCodeDefined {
 		errorMessage := "new email address verification code not defined"
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	rateLimitAllowed := server.emailAddressVerificationRateLimit.Consume(emailAddressUpdate.newEmailAddress)
+	rateLimitAllowed := server.emailAddressVerificationRateLimit.Consume(emailAddressUpdateSession.newEmailAddress)
 	if !rateLimitAllowed {
 		return errorCodeRateLimited
 	}
 
-	verificationCodeCorrect := emailAddressUpdate.compareNewEmailAddressVerificationCode(verificationCode)
+	verificationCodeCorrect := emailAddressUpdateSession.compareNewEmailAddressVerificationCode(verificationCode)
 	if !verificationCodeCorrect {
-		server.logEmailAddressUpdateNewEmailAddressVerificationFailedRequestEvent(requestId, clientIPAddress, session.id, session.userId, emailAddressUpdate.id, emailAddressUpdate.newEmailAddress)
+		server.logEmailAddressUpdateNewEmailAddressVerificationFailedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, emailAddressUpdateSession.id, emailAddressUpdateSession.newEmailAddress)
 		return errorCodeIncorrectVerificationCode
 	}
 
-	newEmailAddressAvailable, err := server.checkUserEmailAddressAvailability(emailAddressUpdate.newEmailAddress)
+	newEmailAddressAvailable, err := server.checkUserEmailAddressAvailability(emailAddressUpdateSession.newEmailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to check user email address availability: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyEmailAddressUpdateNewEmailAddressVerificationCode, errorMessage)
@@ -978,7 +978,7 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationC
 		return errorCodeEmailAddressAlreadyUsed
 	}
 
-	oldUserEmailAddress, err := server.completeEmailAddressUpdate(emailAddressUpdate.id)
+	oldUserEmailAddress, err := server.completeEmailAddressUpdate(emailAddressUpdateSession.id)
 	if errors.Is(err, errItemNotFound) || errors.Is(err, errItemConflict) {
 		return errorCodeConflict
 	}
@@ -988,7 +988,7 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationC
 		return errorCodeUnexpectedError
 	}
 
-	server.logEmailAddressUpdateCompletedRequestEvent(requestId, clientIPAddress, session.id, session.userId, emailAddressUpdate.id, emailAddressUpdate.newEmailAddress)
+	server.logEmailAddressUpdateCompletedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, emailAddressUpdateSession.id, emailAddressUpdateSession.newEmailAddress)
 
 	err = server.sendEmailAddressUpdatedEmail(oldUserEmailAddress)
 	if err != nil {
@@ -1002,15 +1002,15 @@ func (server *serverStruct) verifyEmailAddressUpdateNewEmailAddressVerificationC
 	return ""
 }
 
-func (server *serverStruct) startAccountDeletionAction(requestId string, clientIPAddress string, sessionToken string) (string, string) {
+func (server *serverStruct) startAccountDeletionAction(requestId string, clientIPAddress string, SessionToken string) (string, string) {
 	const (
-		errorCodeInvalidSessionToken = "invalid_session_token"
-		errorCodeUnexpectedError     = "unexpected_error"
+		errorCodeInvalidAuthSessionToken = "invalid_auth_session_token"
+		errorCodeUnexpectedError         = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return "", errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return "", errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -1018,31 +1018,31 @@ func (server *serverStruct) startAccountDeletionAction(requestId string, clientI
 		return "", errorCodeUnexpectedError
 	}
 
-	accountDeletion, accountDeletionSecret, err := server.createAccountDeletion(session.id)
+	accountDeletionSession, accountDeletionSessionSecret, err := server.createAccountDeletion(authSession.id)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create account deletion: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartAccountDeletion, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logAccountDeletionStartedRequestEvent(requestId, clientIPAddress, session.id, session.userId, accountDeletion.id)
+	server.logAccountDeletionStartedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, accountDeletionSession.id)
 
-	accountDeletionToken := createAccountDeletionToken(accountDeletion.id, accountDeletionSecret)
+	accountDeletionSessionToken := createSessionToken(accountDeletionSession.id, accountDeletionSessionSecret)
 
-	return accountDeletionToken, ""
+	return accountDeletionSessionToken, ""
 }
 
-func (server *serverStruct) cancelAccountDeletionAction(requestId string, clientIPAddress string, sessionToken string, accountDeletionToken string) string {
+func (server *serverStruct) cancelAccountDeletionAction(requestId string, clientIPAddress string, SessionToken string, accountDeletionSessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken         = "invalid_session_token"
-		errorCodeInvalidAccountDeletionToken = "invalid_account_deletion_token"
+		errorCodeInvalidAuthSessionToken     = "invalid_auth_session_token"
+		errorCodeInvalidAccountDeletionToken = "invalid_account_deletion_session_token"
 		errorCodeSessionMismatch             = "session_mismatch"
 		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -1050,9 +1050,9 @@ func (server *serverStruct) cancelAccountDeletionAction(requestId string, client
 		return errorCodeUnexpectedError
 	}
 
-	accountDeletion, err := server.validateAccountDeletionToken(accountDeletionToken)
-	if errors.Is(err, errInvalidAccountDeletionToken) {
-		return errorCodeInvalidSessionToken
+	accountDeletionSession, err := server.validateAccountDeletionSessionToken(accountDeletionSessionToken)
+	if errors.Is(err, errInvalidAccountDeletionSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate account deletion token: %s", err.Error())
@@ -1060,13 +1060,13 @@ func (server *serverStruct) cancelAccountDeletionAction(requestId string, client
 		return errorCodeUnexpectedError
 	}
 
-	if accountDeletion.sessionId != session.id {
+	if accountDeletionSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	err = server.deleteAccountDeletion(accountDeletion.id)
+	err = server.deleteAccountDeletionSession(accountDeletionSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to delete account deletion: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to delete account deletion session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelAccountDeletion, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -1074,10 +1074,10 @@ func (server *serverStruct) cancelAccountDeletionAction(requestId string, client
 	return ""
 }
 
-func (server *serverStruct) verifyAccountDeletionUserPasswordAction(requestId string, clientIPAddress string, sessionToken string, accountDeletionToken string, password string) string {
+func (server *serverStruct) verifyAccountDeletionUserPasswordAction(requestId string, clientIPAddress string, SessionToken string, accountDeletionSessionToken string, password string) string {
 	const (
-		errorCodeInvalidSessionToken         = "invalid_session_token"
-		errorCodeInvalidAccountDeletionToken = "invalid_account_deletion_token"
+		errorCodeInvalidAuthSessionToken     = "invalid_auth_session_token"
+		errorCodeInvalidAccountDeletionToken = "invalid_account_deletion_session_token"
 		errorCodeSessionMismatch             = "session_mismatch"
 		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
 		errorCodeIncorrectPassword           = "incorrect_password"
@@ -1086,9 +1086,9 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordAction(requestId st
 		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -1096,25 +1096,25 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordAction(requestId st
 		return errorCodeUnexpectedError
 	}
 
-	accountDeletion, err := server.validateAccountDeletionToken(accountDeletionToken)
-	if errors.Is(err, errInvalidAccountDeletionToken) {
-		return errorCodeInvalidSessionToken
+	accountDeletionSession, err := server.validateAccountDeletionSessionToken(accountDeletionSessionToken)
+	if errors.Is(err, errInvalidAccountDeletionSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyAccountDeletionUserPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if accountDeletion.sessionId != session.id {
+	if accountDeletionSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if accountDeletion.userIdentityVerified {
+	if accountDeletionSession.userIdentityVerified {
 		return errorCodeUserIdentityAlreadyVerified
 	}
 
-	user, err := server.getUser(session.userId)
+	user, err := server.getUser(authSession.userId)
 	if errors.Is(err, errItemNotFound) {
 		return errorCodeConflict
 	}
@@ -1132,35 +1132,35 @@ func (server *serverStruct) verifyAccountDeletionUserPasswordAction(requestId st
 	passwordHash := server.hashUserPassword(password, user.passwordSalt)
 	passwordCorrect := constantTimeCompare(user.passwordHash, passwordHash)
 	if !passwordCorrect {
-		server.logAccountDeletionUserPasswordVerificationFailedRequestEvent(requestId, clientIPAddress, session.id, session.userId, accountDeletion.id)
+		server.logAccountDeletionUserPasswordVerificationFailedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, accountDeletionSession.id)
 		return errorCodeIncorrectPassword
 	}
 
-	err = server.setAccountDeletionAsUserIdentityVerified(accountDeletion.id)
+	err = server.setAccountDeletionSessionAsUserIdentityVerified(accountDeletionSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set account deletion as user identity verified: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set account deletion session as user identity verified: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyAccountDeletionUserPassword, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	server.logAccountDeletionUserPasswordVerifiedRequestEvent(requestId, clientIPAddress, session.id, session.userId, accountDeletion.id)
+	server.logAccountDeletionUserPasswordVerifiedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, accountDeletionSession.id)
 
 	return ""
 }
 
-func (server *serverStruct) confirmAccountDeletionAction(requestId string, clientIPAddress string, sessionToken string, accountDeletionToken string) string {
+func (server *serverStruct) confirmAccountDeletionAction(requestId string, clientIPAddress string, SessionToken string, accountDeletionSessionToken string) string {
 	const (
-		errorCodeInvalidSessionToken         = "invalid_session_token"
-		errorCodeInvalidAccountDeletionToken = "invalid_account_deletion_token"
+		errorCodeInvalidAuthSessionToken     = "invalid_auth_session_token"
+		errorCodeInvalidAccountDeletionToken = "invalid_account_deletion_session_token"
 		errorCodeSessionMismatch             = "session_mismatch"
 		errorCodeUserIdentityNotVerified     = "user_identity_not_verified"
 		errorCodeConflict                    = "conflict"
 		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
-	session, err := server.validateSessionToken(sessionToken)
-	if errors.Is(err, errInvalidSessionToken) {
-		return errorCodeInvalidSessionToken
+	authSession, err := server.validateAuthSessionToken(SessionToken)
+	if errors.Is(err, errInvalidAuthSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate session token: %s", err.Error())
@@ -1168,25 +1168,25 @@ func (server *serverStruct) confirmAccountDeletionAction(requestId string, clien
 		return errorCodeUnexpectedError
 	}
 
-	accountDeletion, err := server.validateAccountDeletionToken(accountDeletionToken)
-	if errors.Is(err, errInvalidAccountDeletionToken) {
-		return errorCodeInvalidSessionToken
+	accountDeletionSession, err := server.validateAccountDeletionSessionToken(accountDeletionSessionToken)
+	if errors.Is(err, errInvalidAccountDeletionSessionToken) {
+		return errorCodeInvalidAuthSessionToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate email address update token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate email address update session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionConfirmAccountDeletion, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if accountDeletion.sessionId != session.id {
+	if accountDeletionSession.authSessionId != authSession.id {
 		return errorCodeSessionMismatch
 	}
 
-	if !accountDeletion.userIdentityVerified {
+	if !accountDeletionSession.userIdentityVerified {
 		return errorCodeUserIdentityNotVerified
 	}
 
-	err = server.completeAccountDeletion(accountDeletion.id)
+	err = server.completeAccountDeletion(accountDeletionSession.id)
 	if errors.Is(err, errItemNotFound) || errors.Is(err, errItemConflict) {
 		return errorCodeConflict
 	}
@@ -1196,7 +1196,7 @@ func (server *serverStruct) confirmAccountDeletionAction(requestId string, clien
 		return errorCodeUnexpectedError
 	}
 
-	server.logAccountDeletionCompletedRequestEvent(requestId, clientIPAddress, session.id, session.userId, accountDeletion.id)
+	server.logAccountDeletionCompletedRequestEvent(requestId, clientIPAddress, authSession.id, authSession.userId, accountDeletionSession.id)
 
 	return ""
 }
@@ -1228,48 +1228,48 @@ func (server *serverStruct) startPasswordResetAction(requestId string, clientIPA
 		return "", errorCodeRateLimited
 	}
 
-	passwordReset, passwordResetSecret, err := server.createPasswordResetFromUserEmailAddress(user.emailAddress)
+	passwordResetSession, passwordResetSessionSecret, err := server.createPasswordResetFromUserEmailAddress(user.emailAddress)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create password reset: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartPasswordReset, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logPasswordResetStartedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, user.emailAddress)
+	server.logPasswordResetStartedRequestEvent(requestId, clientIPAddress, passwordResetSession.id, passwordResetSession.userId, user.emailAddress)
 
-	err = server.sendPasswordResetEmailCodeEmail(user.emailAddress, passwordReset.emailCode)
+	err = server.sendPasswordResetEmailCodeEmail(user.emailAddress, passwordResetSession.emailCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password reset verification email: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionStartPasswordReset, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logRequestEmail(requestId, clientIPAddress, user.emailAddress, emailTypePasswordResetCode)
+	server.logRequestEmail(requestId, clientIPAddress, user.emailAddress, emailTypePasswordResetEmailCode)
 
-	passwordResetToken := createPasswordResetToken(passwordReset.id, passwordResetSecret)
+	passwordResetSessionToken := createSessionToken(passwordResetSession.id, passwordResetSessionSecret)
 
-	return passwordResetToken, ""
+	return passwordResetSessionToken, ""
 }
 
-func (server *serverStruct) cancelPasswordResetAction(requestId string, clientIPAddress string, passwordResetToken string) string {
+func (server *serverStruct) cancelPasswordResetAction(requestId string, clientIPAddress string, passwordResetSessionToken string) string {
 	const (
-		errorCodeInvalidPasswordResetToken = "invalid_password_reset_token"
+		errorCodeInvalidPasswordResetToken = "invalid_password_reset_session_token"
 		errorCodeUnexpectedError           = "unexpected_error"
 	)
 
-	passwordReset, err := server.validatePasswordResetToken(passwordResetToken)
+	passwordResetSession, err := server.validatePasswordResetToken(passwordResetSessionToken)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		return errorCodeInvalidPasswordResetToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password reset token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password reset session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelPasswordReset, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	err = server.deletePasswordReset(passwordReset.id)
+	err = server.deletePasswordResetSession(passwordResetSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to delete password reset: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to delete password reset session: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionCancelPasswordReset, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -1277,35 +1277,35 @@ func (server *serverStruct) cancelPasswordResetAction(requestId string, clientIP
 	return ""
 }
 
-func (server *serverStruct) sendPasswordResetEmailCodeAction(requestId string, clientIPAddress string, passwordResetToken string) string {
+func (server *serverStruct) sendPasswordResetEmailCodeAction(requestId string, clientIPAddress string, passwordResetSessionToken string) string {
 	const (
-		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_token"
+		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_session_token"
 		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
 		errorCodeRateLimited                 = "rate_limited"
 		errorCodeConflict                    = "conflict"
 		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
-	passwordReset, err := server.validatePasswordResetToken(passwordResetToken)
+	passwordResetSession, err := server.validatePasswordResetToken(passwordResetSessionToken)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		return errorCodeInvalidPasswordResetToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password reset token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password reset session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSendPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if passwordReset.userIdentityVerified {
+	if passwordResetSession.userIdentityVerified {
 		return errorCodeUserIdentityAlreadyVerified
 	}
 
-	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordResetSession.id)
 	if errors.Is(err, errItemNotFound) {
 		return errorCodeConflict
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to get password reset session user email address: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSendPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -1315,21 +1315,21 @@ func (server *serverStruct) sendPasswordResetEmailCodeAction(requestId string, c
 		return errorCodeRateLimited
 	}
 
-	err = server.sendPasswordResetEmailCodeEmail(userEmailAddress, passwordReset.emailCode)
+	err = server.sendPasswordResetEmailCodeEmail(userEmailAddress, passwordResetSession.emailCode)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to send password reset verification email: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSendPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	server.logRequestEmail(requestId, clientIPAddress, userEmailAddress, emailTypePasswordResetCode)
+	server.logRequestEmail(requestId, clientIPAddress, userEmailAddress, emailTypePasswordResetEmailCode)
 
 	return ""
 }
 
-func (server *serverStruct) verifyPasswordResetEmailCodeAction(requestId string, clientIPAddress string, passwordResetToken string, emailCode string) string {
+func (server *serverStruct) verifyPasswordResetEmailCodeAction(requestId string, clientIPAddress string, passwordResetSessionToken string, emailCode string) string {
 	const (
-		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_token"
+		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_session_token"
 		errorCodeUserIdentityAlreadyVerified = "user_identity_already_verified"
 		errorCodeIncorrectEmailCode          = "incorrect_email_code"
 		errorCodeRateLimited                 = "rate_limited"
@@ -1337,46 +1337,46 @@ func (server *serverStruct) verifyPasswordResetEmailCodeAction(requestId string,
 		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
-	passwordReset, err := server.validatePasswordResetToken(passwordResetToken)
+	passwordResetSession, err := server.validatePasswordResetToken(passwordResetSessionToken)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		return errorCodeInvalidPasswordResetToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password reset token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password reset session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	if passwordReset.userIdentityVerified {
+	if passwordResetSession.userIdentityVerified {
 		return errorCodeUserIdentityAlreadyVerified
 	}
 
-	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordResetSession.id)
 	if errors.Is(err, errItemNotFound) {
 		return errorCodeConflict
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to get password reset session user email address: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
 
-	rateLimitAllowed := server.userPasswordResetCodeVerificationRateLimit.Consume(passwordReset.userId)
+	rateLimitAllowed := server.userPasswordResetCodeVerificationRateLimit.Consume(passwordResetSession.userId)
 	if !rateLimitAllowed {
 		return errorCodeRateLimited
 	}
 
-	codeCorrect := passwordReset.compareEmailCode(emailCode)
+	codeCorrect := passwordResetSession.compareEmailCode(emailCode)
 	if !codeCorrect {
-		server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, userEmailAddress)
+		server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordResetSession.id, passwordResetSession.userId, userEmailAddress)
 		return errorCodeIncorrectEmailCode
 	}
 
-	server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, userEmailAddress)
+	server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordResetSession.id, passwordResetSession.userId, userEmailAddress)
 
-	err = server.setPasswordResetAsUserIdentityVerified(passwordReset.id)
+	err = server.setPasswordResetSessionAsUserIdentityVerified(passwordResetSession.id)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to set password reset as user identity verified: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to set password reset session as user identity verified: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionVerifyPasswordResetEmailCode, errorMessage)
 		return errorCodeUnexpectedError
 	}
@@ -1384,9 +1384,9 @@ func (server *serverStruct) verifyPasswordResetEmailCodeAction(requestId string,
 	return ""
 }
 
-func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, clientIPAddress string, passwordResetToken string, newPassword string) (string, string) {
+func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, clientIPAddress string, passwordResetSessionToken string, newPassword string) (string, string) {
 	const (
-		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_token"
+		errorCodeInvalidPasswordResetToken   = "invalid_password_reset_session_token"
 		errorCodeVerificationCodeNotVerified = "verification_code_not_verified"
 		errorCodeInvalidPassword             = "invalid_password"
 		errorCodeWeakPassword                = "weak_password"
@@ -1394,26 +1394,26 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		errorCodeUnexpectedError             = "unexpected_error"
 	)
 
-	passwordReset, err := server.validatePasswordResetToken(passwordResetToken)
+	passwordResetSession, err := server.validatePasswordResetToken(passwordResetSessionToken)
 	if errors.Is(err, errInvalidPasswordResetToken) {
 		return "", errorCodeInvalidPasswordResetToken
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to validate password reset token: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to validate password reset session token: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordResetNewPassword, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
 
-	if !passwordReset.userIdentityVerified {
+	if !passwordResetSession.userIdentityVerified {
 		return "", errorCodeVerificationCodeNotVerified
 	}
 
-	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordReset.id)
+	userEmailAddress, err := server.getPasswordResetUserEmailAddress(passwordResetSession.id)
 	if errors.Is(err, errItemNotFound) {
 		return "", errorCodeConflict
 	}
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to get password reset user email address: %s", err.Error())
+		errorMessage := fmt.Sprintf("failed to get password reset session user email address: %s", err.Error())
 		server.logActionInternalError(requestId, clientIPAddress, actionSetPasswordResetNewPassword, errorMessage)
 		return "", errorCodeUnexpectedError
 	}
@@ -1432,7 +1432,7 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeWeakPassword
 	}
 
-	session, sessionSecret, err := server.completePasswordReset(passwordReset.id, newPassword)
+	authSession, authSessionSecret, err := server.completePasswordReset(passwordResetSession.id, newPassword)
 	if errors.Is(err, errItemNotFound) || errors.Is(err, errItemConflict) {
 		return "", errorCodeConflict
 	}
@@ -1442,7 +1442,7 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 		return "", errorCodeUnexpectedError
 	}
 
-	server.logPasswordResetCompletedRequestEvent(requestId, clientIPAddress, passwordReset.id, passwordReset.userId, userEmailAddress, session.id)
+	server.logPasswordResetCompletedRequestEvent(requestId, clientIPAddress, passwordResetSession.id, passwordResetSession.userId, userEmailAddress, authSession.id)
 
 	err = server.sendPasswordUpdatedEmail(userEmailAddress)
 	if err != nil {
@@ -1453,7 +1453,7 @@ func (server *serverStruct) setPasswordResetNewPasswordAction(requestId string, 
 
 	server.logRequestEmail(requestId, clientIPAddress, userEmailAddress, emailTypePasswordUpdatedNotification)
 
-	sessionToken := createSessionToken(session.id, sessionSecret)
+	authSessionToken := createSessionToken(authSession.id, authSessionSecret)
 
-	return sessionToken, ""
+	return authSessionToken, ""
 }

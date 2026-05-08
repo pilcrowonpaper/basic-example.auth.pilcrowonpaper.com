@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const passwordResetToken = pageDataJSONObject.password_reset_token;
+const passwordResetSessionToken = pageDataJSONObject.password_reset_session_token;
 
 const verifyEmailCodeFormElement = document.getElementById("verify-email-code-form");
 verifyEmailCodeFormElement.addEventListener("submit", handleVerifyEmailCodeFormSubmitEvent);
@@ -21,7 +21,7 @@ async function handleVerifyEmailCodeFormSubmitEvent(event) {
 	const emailCode = emailCodeInputValue.replaceAll(" ", "").replaceAll("-", "").toUpperCase();
 
 	const actionValuesJSONObject = {
-		password_reset_token: passwordResetToken,
+		password_reset_session_token: passwordResetSessionToken,
 		email_code: emailCode,
 	};
 
@@ -39,7 +39,7 @@ async function handleVerifyEmailCodeFormSubmitEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_password_reset_token") {
+		if (actionResult.errorCode === "invalid_password_reset_session_token") {
 			deletePasswordResetTokenCookie();
 
 			alert("Your session has expired.");
@@ -71,7 +71,7 @@ async function handleResendEmailCodeButtonClickEvent() {
 	resendEmailCodeButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		password_reset_token: passwordResetToken,
+		password_reset_session_token: passwordResetSessionToken,
 	};
 
 	let actionResult;
@@ -88,7 +88,7 @@ async function handleResendEmailCodeButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_password_reset_token") {
+		if (actionResult.errorCode === "invalid_password_reset_session_token") {
 			deletePasswordResetTokenCookie();
 
 			alert("Your session has expired.");
@@ -116,7 +116,7 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		password_reset_token: passwordResetToken,
+		password_reset_session_token: passwordResetSessionToken,
 	};
 
 	let actionResult;
@@ -130,7 +130,7 @@ async function handleCancelButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_password_reset_token") {
+		if (actionResult.errorCode === "invalid_password_reset_session_token") {
 			deletePasswordResetTokenCookie();
 
 			alert("Your session has expired.");

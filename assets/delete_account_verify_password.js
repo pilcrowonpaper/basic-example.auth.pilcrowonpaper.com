@@ -1,6 +1,6 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const sessionToken = pageDataJSONObject.session_token;
-const accountDeletionToken = pageDataJSONObject.account_deletion_token;
+const SessionToken = pageDataJSONObject.auth_session_token;
+const accountDeletionSessionToken = pageDataJSONObject.account_deletion_session_token;
 
 const verifyPasswordFormElement = document.getElementById("verify-password-form");
 verifyPasswordFormElement.addEventListener("submit", handleVerifyPasswordFormSubmitEvent);
@@ -18,8 +18,8 @@ async function handleVerifyPasswordFormSubmitEvent(event) {
 	const password = formData.get("password");
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
-		account_deletion_token: accountDeletionToken,
+		auth_session_token: SessionToken,
+		account_deletion_session_token: accountDeletionSessionToken,
 		password: password,
 	};
 
@@ -37,16 +37,16 @@ async function handleVerifyPasswordFormSubmitEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 			deleteAccountDeletionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
 			return;
 		}
-		if (actionResult.errorCode === "invalid_account_deletion_token") {
-			deleteSessionTokenCookie();
+		if (actionResult.errorCode === "invalid_account_deletion_session_token") {
+			deleteAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/account";
@@ -77,8 +77,8 @@ async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		session_token: sessionToken,
-		account_deletion_token: accountDeletionToken,
+		auth_session_token: SessionToken,
+		account_deletion_session_token: accountDeletionSessionToken,
 	};
 
 	let actionResult;
@@ -92,16 +92,16 @@ async function handleCancelButtonClickEvent() {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_session_token") {
-			deleteSessionToken();
+		if (actionResult.errorCode === "invalid_auth_session_token") {
+			deleteAuthSessionToken();
 			deleteAccountDeletionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/sign-in";
 			return;
 		}
-		if (actionResult.errorCode === "invalid_account_deletion_token") {
-			deleteSessionTokenCookie();
+		if (actionResult.errorCode === "invalid_account_deletion_session_token") {
+			deleteAuthSessionTokenCookie();
 
 			alert("Your session has expired.");
 			window.location.href = "/account";

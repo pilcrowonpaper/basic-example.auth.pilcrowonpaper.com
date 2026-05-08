@@ -13,9 +13,9 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-type emailAddressUpdateStruct struct {
+type emailAddressUpdateSessionStruct struct {
 	id                                     string
-	sessionId                              string
+	authSessionId                          string
 	secretHash                             []byte
 	userIdentityVerified                   bool
 	newEmailAddress                        string
@@ -25,42 +25,20 @@ type emailAddressUpdateStruct struct {
 	createdAt                              time.Time
 }
 
-func (emailAddressUpdate *emailAddressUpdateStruct) compareSecretAgainstHash(secret []byte) bool {
+func (emailAddressUpdateSession *emailAddressUpdateSessionStruct) compareSecretAgainstHash(secret []byte) bool {
 	hashed := hashSessionSecret(secret)
-	hashEqual := constantTimeCompare(hashed, emailAddressUpdate.secretHash)
+	hashEqual := constantTimeCompare(hashed, emailAddressUpdateSession.secretHash)
 	return hashEqual
 }
 
-func (emailAddressUpdate *emailAddressUpdateStruct) compareNewEmailAddressVerificationCode(newEmailAddressVerificationCode string) bool {
-	if !emailAddressUpdate.newEmailAddressVerificationCodeDefined {
+func (emailAddressUpdateSession *emailAddressUpdateSessionStruct) compareNewEmailAddressVerificationCode(newEmailAddressVerificationCode string) bool {
+	if !emailAddressUpdateSession.newEmailAddressVerificationCodeDefined {
 		return false
 	}
-	return constantTimeCompareStrings(newEmailAddressVerificationCode, emailAddressUpdate.newEmailAddressVerificationCode)
+	return constantTimeCompareStrings(newEmailAddressVerificationCode, emailAddressUpdateSession.newEmailAddressVerificationCode)
 }
 
-func createEmailAddressUpdateToken(emailAddressUpdateId string, emailAddressUpdateSecret []byte) string {
-	encodedEmailAddressUpdateSecret := base64.StdEncoding.EncodeToString(emailAddressUpdateSecret)
-	emailAddressUpdateToken := emailAddressUpdateId + "." + encodedEmailAddressUpdateSecret
-	return emailAddressUpdateToken
-}
-
-const emailAddressUpdateTokenCookieName = "email_address_update_token"
-
-func (server *serverStruct) setBlankEmailAddressUpdateTokenCookie(w http.ResponseWriter) {
-	cookie := &http.Cookie{
-		Name:     emailAddressUpdateTokenCookieName,
-		Value:    "",
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   -1,
-		Path:     "/",
-		Secure:   server.https,
-	}
-	http.SetCookie(w, cookie)
-}
-
-var errInvalidEmailAddressUpdateToken = errors.New("invalid email address update token")
-
-func (server *serverStruct) createEmailAddressUpdate(sessionId string) (emailAddressUpdateStruct, []byte, error) {
+func (server *serverStruct) createEmailAddressUpdate(authSessionId string) (emailAddressUpdateSessionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
 	id := generateItemId()
@@ -68,9 +46,9 @@ func (server *serverStruct) createEmailAddressUpdate(sessionId string) (emailAdd
 	secret := generateSessionSecret()
 	secretHash := hashSessionSecret(secret)
 
-	emailAddressUpdate := emailAddressUpdateStruct{
+	emailAddressUpdateSession := emailAddressUpdateSessionStruct{
 		id:                                     id,
-		sessionId:                              sessionId,
+		authSessionId:                          authSessionId,
 		secretHash:                             secretHash,
 		userIdentityVerified:                   false,
 		newEmailAddressDefined:                 false,
@@ -80,47 +58,47 @@ func (server *serverStruct) createEmailAddressUpdate(sessionId string) (emailAdd
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return emailAddressUpdateStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return emailAddressUpdateSessionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		"INSERT INTO email_address_update (id, session_id, secret_hash, created_at) VALUES (?, ?, ?, ?)",
+		"INSERT INTO email_address_update_session (id, auth_session_id, secret_hash, created_at) VALUES (?, ?, ?, ?)",
 		&sqlitex.ExecOptions{
 			Args: []any{
-				emailAddressUpdate.id,
-				emailAddressUpdate.sessionId,
-				emailAddressUpdate.secretHash,
-				emailAddressUpdate.createdAt.Unix(),
+				emailAddressUpdateSession.id,
+				emailAddressUpdateSession.authSessionId,
+				emailAddressUpdateSession.secretHash,
+				emailAddressUpdateSession.createdAt.Unix(),
 			},
 		},
 	)
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
-		return emailAddressUpdateStruct{}, nil, errItemConflict
+		return emailAddressUpdateSessionStruct{}, nil, errItemConflict
 	}
 	if err != nil {
-		return emailAddressUpdateStruct{}, nil, fmt.Errorf("failed to insert into email_address_update table: %s", err.Error())
+		return emailAddressUpdateSessionStruct{}, nil, fmt.Errorf("failed to insert into email_address_update_session table: %s", err.Error())
 	}
 
-	return emailAddressUpdate, secret, nil
+	return emailAddressUpdateSession, secret, nil
 }
 
-func (server *serverStruct) getEmailAddressUpdate(emailAddressUpdateId string) (emailAddressUpdateStruct, error) {
-	emailAddressUpdates := []emailAddressUpdateStruct{}
+func (server *serverStruct) getEmailAddressUpdate(emailAddressUpdateSessionId string) (emailAddressUpdateSessionStruct, error) {
+	emailAddressUpdateSessions := []emailAddressUpdateSessionStruct{}
 
 	databaseReadConnection, err := server.databaseReadConnectionPool.Take(context.Background())
 	if err != nil {
-		return emailAddressUpdateStruct{}, fmt.Errorf("failed to take database read connection: %s", err.Error())
+		return emailAddressUpdateSessionStruct{}, fmt.Errorf("failed to take database read connection: %s", err.Error())
 	}
 	err = sqlitex.Execute(
 		databaseReadConnection,
-		"SELECT session_id, secret_hash, user_identity_verified, new_email_address, new_email_address_verification_code, created_at FROM email_address_update WHERE id = ?",
+		"SELECT auth_session_id, secret_hash, user_identity_verified, new_email_address, new_email_address_verification_code, created_at FROM email_address_update_session WHERE id = ?",
 		&sqlitex.ExecOptions{
-			Args: []any{emailAddressUpdateId},
+			Args: []any{emailAddressUpdateSessionId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				secretHash := make([]byte, 32)
 
-				sessionId := stmt.ColumnText(0)
+				authSessionId := stmt.ColumnText(0)
 				stmt.ColumnBytes(1, secretHash)
 				userIdentityVerified := stmt.ColumnBool(2)
 
@@ -140,9 +118,9 @@ func (server *serverStruct) getEmailAddressUpdate(emailAddressUpdateId string) (
 
 				createdAt := time.Unix(stmt.ColumnInt64(5), 0)
 
-				emailAddressUpdate := emailAddressUpdateStruct{
-					id:                                     emailAddressUpdateId,
-					sessionId:                              sessionId,
+				emailAddressUpdateSession := emailAddressUpdateSessionStruct{
+					id:                                     emailAddressUpdateSessionId,
+					authSessionId:                          authSessionId,
 					secretHash:                             secretHash,
 					userIdentityVerified:                   userIdentityVerified,
 					newEmailAddress:                        newEmailAddress,
@@ -152,86 +130,94 @@ func (server *serverStruct) getEmailAddressUpdate(emailAddressUpdateId string) (
 					createdAt:                              createdAt,
 				}
 
-				emailAddressUpdates = append(emailAddressUpdates, emailAddressUpdate)
+				emailAddressUpdateSessions = append(emailAddressUpdateSessions, emailAddressUpdateSession)
 				return nil
 			},
 		},
 	)
 	server.databaseReadConnectionPool.Put(databaseReadConnection)
 	if err != nil {
-		return emailAddressUpdateStruct{}, fmt.Errorf("failed to select from email_address_update table: %s", err.Error())
+		return emailAddressUpdateSessionStruct{}, fmt.Errorf("failed to select from email_address_update_session table: %s", err.Error())
 	}
 
-	if len(emailAddressUpdates) < 1 {
-		return emailAddressUpdateStruct{}, errItemNotFound
+	if len(emailAddressUpdateSessions) < 1 {
+		return emailAddressUpdateSessionStruct{}, errItemNotFound
 	}
 
-	emailAddressUpdate := emailAddressUpdates[0]
+	emailAddressUpdateSession := emailAddressUpdateSessions[0]
 
-	if time.Since(emailAddressUpdate.createdAt) >= time.Hour {
-		return emailAddressUpdateStruct{}, errItemNotFound
+	if time.Since(emailAddressUpdateSession.createdAt) >= time.Hour {
+		return emailAddressUpdateSessionStruct{}, errItemNotFound
 	}
 
-	return emailAddressUpdate, nil
+	return emailAddressUpdateSession, nil
 }
 
-func (server *serverStruct) validateEmailAddressUpdateToken(emailAddressUpdateToken string) (emailAddressUpdateStruct, error) {
-	emailAddressUpdateTokenParts := strings.Split(emailAddressUpdateToken, ".")
-	if len(emailAddressUpdateTokenParts) != 2 {
-		return emailAddressUpdateStruct{}, errInvalidEmailAddressUpdateToken
+var errInvalidEmailAddressUpdateToken = errors.New("invalid email address update session token")
+
+func (server *serverStruct) validateEmailAddressUpdateToken(emailAddressUpdateSessionToken string) (emailAddressUpdateSessionStruct, error) {
+	emailAddressUpdateSessionTokenParts := strings.Split(emailAddressUpdateSessionToken, ".")
+	if len(emailAddressUpdateSessionTokenParts) != 2 {
+		return emailAddressUpdateSessionStruct{}, errInvalidEmailAddressUpdateToken
 	}
-	emailAddressUpdateId := emailAddressUpdateTokenParts[0]
-	encodedEmailAddressUpdateSecret := emailAddressUpdateTokenParts[1]
-	emailAddressUpdateSecret, err := base64.StdEncoding.DecodeString(encodedEmailAddressUpdateSecret)
+	emailAddressUpdateSessionId := emailAddressUpdateSessionTokenParts[0]
+	encodedEmailAddressUpdateSecret := emailAddressUpdateSessionTokenParts[1]
+	emailAddressUpdateSessionSecret, err := base64.StdEncoding.DecodeString(encodedEmailAddressUpdateSecret)
 	if err != nil {
-		return emailAddressUpdateStruct{}, errInvalidEmailAddressUpdateToken
+		return emailAddressUpdateSessionStruct{}, errInvalidEmailAddressUpdateToken
 	}
 
-	emailAddressUpdate, err := server.getEmailAddressUpdate(emailAddressUpdateId)
+	emailAddressUpdateSession, err := server.getEmailAddressUpdate(emailAddressUpdateSessionId)
 	if errors.Is(err, errItemNotFound) {
-		return emailAddressUpdateStruct{}, errInvalidEmailAddressUpdateToken
+		return emailAddressUpdateSessionStruct{}, errInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		return emailAddressUpdateStruct{}, fmt.Errorf("failed to get email address update: %s", err.Error())
+		return emailAddressUpdateSessionStruct{}, fmt.Errorf("failed to get email address update session: %s", err.Error())
 	}
 
-	emailAddressUpdateSecretValid := emailAddressUpdate.compareSecretAgainstHash(emailAddressUpdateSecret)
-	if !emailAddressUpdateSecretValid {
-		return emailAddressUpdateStruct{}, errInvalidEmailAddressUpdateToken
+	emailAddressUpdateSessionSecretValid := emailAddressUpdateSession.compareSecretAgainstHash(emailAddressUpdateSessionSecret)
+	if !emailAddressUpdateSessionSecretValid {
+		return emailAddressUpdateSessionStruct{}, errInvalidEmailAddressUpdateToken
 	}
 
-	return emailAddressUpdate, nil
+	return emailAddressUpdateSession, nil
 }
 
-func (server *serverStruct) validateRequestEmailAddressUpdateToken(r *http.Request) (emailAddressUpdateStruct, string, error) {
-	emailAddressUpdateTokenCookie, err := r.Cookie(emailAddressUpdateTokenCookieName)
-	if err != nil {
-		return emailAddressUpdateStruct{}, "", errInvalidEmailAddressUpdateToken
-	}
-	emailAddressUpdateToken := emailAddressUpdateTokenCookie.Value
+const emailAddressUpdateSessionTokenCookieName = "email_address_update_session_token"
 
-	emailAddressUpdate, err := server.validateEmailAddressUpdateToken(emailAddressUpdateToken)
+func (server *serverStruct) validateRequestEmailAddressUpdateToken(r *http.Request) (emailAddressUpdateSessionStruct, string, error) {
+	emailAddressUpdateSessionTokenCookie, err := r.Cookie(emailAddressUpdateSessionTokenCookieName)
+	if err != nil {
+		return emailAddressUpdateSessionStruct{}, "", errInvalidEmailAddressUpdateToken
+	}
+	emailAddressUpdateSessionToken := emailAddressUpdateSessionTokenCookie.Value
+
+	emailAddressUpdateSession, err := server.validateEmailAddressUpdateToken(emailAddressUpdateSessionToken)
 	if errors.Is(err, errInvalidEmailAddressUpdateToken) {
-		return emailAddressUpdateStruct{}, "", errInvalidEmailAddressUpdateToken
+		return emailAddressUpdateSessionStruct{}, "", errInvalidEmailAddressUpdateToken
 	}
 	if err != nil {
-		return emailAddressUpdateStruct{}, "", fmt.Errorf("failed to validate email address update token: %s", err.Error())
+		return emailAddressUpdateSessionStruct{}, "", fmt.Errorf("failed to validate email address update session token: %s", err.Error())
 	}
 
-	return emailAddressUpdate, emailAddressUpdateToken, nil
+	return emailAddressUpdateSession, emailAddressUpdateSessionToken, nil
 }
 
-func (server *serverStruct) setEmailAddressUpdateAsUserIdentityVerified(emailAddressUpdateId string) error {
+func (server *serverStruct) setBlankEmailAddressUpdateTokenCookie(w http.ResponseWriter) {
+	server.setBlankSessionTokenCookie(w, emailAddressUpdateSessionTokenCookieName)
+}
+
+func (server *serverStruct) setEmailAddressUpdateAsUserIdentityVerified(emailAddressUpdateSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
-		Args: []any{emailAddressUpdateId},
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update_session SET user_identity_verified = 1 WHERE id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
+		Args: []any{emailAddressUpdateSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to update email_address_update table: %s", err.Error())
+		return fmt.Errorf("failed to update email_address_update_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -241,19 +227,19 @@ func (server *serverStruct) setEmailAddressUpdateAsUserIdentityVerified(emailAdd
 	return nil
 }
 
-func (server *serverStruct) setEmailAddressUpdateNewEmailAddress(emailAddressUpdateId string, newEmailAddress string) (string, error) {
+func (server *serverStruct) setEmailAddressUpdateNewEmailAddress(emailAddressUpdateSessionId string, newEmailAddress string) (string, error) {
 	newEmailAddressVerificationCode := generateEmailAddressVerificationCode()
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update SET new_email_address = ?, new_email_address_verification_code = ? WHERE id = ? AND new_email_address IS NULL", &sqlitex.ExecOptions{
-		Args: []any{newEmailAddress, newEmailAddressVerificationCode, emailAddressUpdateId},
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE email_address_update_session SET new_email_address = ?, new_email_address_verification_code = ? WHERE id = ? AND new_email_address IS NULL", &sqlitex.ExecOptions{
+		Args: []any{newEmailAddress, newEmailAddressVerificationCode, emailAddressUpdateSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return "", fmt.Errorf("failed to update email_address_update table: %s", err.Error())
+		return "", fmt.Errorf("failed to update email_address_update_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -263,7 +249,7 @@ func (server *serverStruct) setEmailAddressUpdateNewEmailAddress(emailAddressUpd
 	return newEmailAddressVerificationCode, nil
 }
 
-func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId string) (string, error) {
+func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateSessionId string) (string, error) {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("failed to take database write connection: %s", err.Error())
@@ -278,12 +264,12 @@ func (server *serverStruct) completeEmailAddressUpdate(emailAddressUpdateId stri
 	oldEmailAddresses := []string{}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		`SELECT user.email_address FROM email_address_update
-INNER JOIN session ON email_address_update.session_id = session.id
-INNER JOIN user ON session.user_id = user.id
-WHERE email_address_update.id = ?`,
+		`SELECT user.email_address FROM email_address_update_session
+INNER JOIN auth_session ON email_address_update_session.auth_session_id = auth_session.id
+INNER JOIN user ON auth_session.user_id = user.id
+WHERE email_address_update_session.id = ?`,
 		&sqlitex.ExecOptions{
-			Args: []any{emailAddressUpdateId},
+			Args: []any{emailAddressUpdateSessionId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				oldEmailAddress := stmt.ColumnText(0)
 
@@ -298,7 +284,7 @@ WHERE email_address_update.id = ?`,
 		if rollbackErr != nil {
 			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return "", fmt.Errorf("failed to select from email_address_update table: %s", err.Error())
+		return "", fmt.Errorf("failed to select from email_address_update_session table: %s", err.Error())
 	}
 
 	if len(oldEmailAddresses) < 1 {
@@ -314,16 +300,16 @@ WHERE email_address_update.id = ?`,
 	userIds := []string{}
 	err = sqlitex.Execute(
 		databaseWriteConnection,
-		`UPDATE user SET email_address = email_address_update.new_email_address
-FROM session
-INNER JOIN email_address_update ON email_address_update.session_id = session.id
-WHERE user.id = session.user_id
-AND email_address_update.id = ?
-AND email_address_update.user_identity_verified = 1
-AND email_address_update.new_email_address IS NOT NULL
-RETURNING user.id`,
+		`UPDATE user SET email_address = email_address_update_session.new_email_address
+FROM auth_session
+INNER JOIN email_address_update_session ON email_address_update_session.auth_session_id = auth_session.id
+WHERE user.id = auth_session.user_id
+AND email_address_update_session.id = ?
+AND email_address_update_session.user_identity_verified = 1
+AND email_address_update_session.new_email_address IS NOT NULL
+RETURNING id`,
 		&sqlitex.ExecOptions{
-			Args: []any{emailAddressUpdateId},
+			Args: []any{emailAddressUpdateSessionId},
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				id := stmt.ColumnText(0)
 				userIds = append(userIds, id)
@@ -352,8 +338,8 @@ RETURNING user.id`,
 	}
 	userId := userIds[0]
 
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM email_address_update WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{emailAddressUpdateId},
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM email_address_update_session WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{emailAddressUpdateSessionId},
 	})
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
@@ -361,10 +347,10 @@ RETURNING user.id`,
 		if rollbackErr != nil {
 			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return "", fmt.Errorf("failed to delete from email_address_update table: %s", err.Error())
+		return "", fmt.Errorf("failed to delete from email_address_update_session table: %s", err.Error())
 	}
 
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_reset WHERE user_id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM password_reset_session WHERE user_id = ? AND user_identity_verified = 0", &sqlitex.ExecOptions{
 		Args: []any{userId},
 	})
 	if err != nil {
@@ -373,7 +359,7 @@ RETURNING user.id`,
 		if rollbackErr != nil {
 			return "", fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return "", fmt.Errorf("failed to delete from password_reset table: %s", err.Error())
+		return "", fmt.Errorf("failed to delete from password_reset_session table: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "COMMIT", nil)
@@ -391,17 +377,17 @@ RETURNING user.id`,
 	return oldEmailAddress, nil
 }
 
-func (server *serverStruct) deleteEmailAddressUpdate(emailAddressUpdateId string) error {
+func (server *serverStruct) deleteEmailAddressUpdate(emailAddressUpdateSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM email_address_update WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{emailAddressUpdateId},
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM email_address_update_session WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{emailAddressUpdateSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to delete from email_address_update table: %s", err.Error())
+		return fmt.Errorf("failed to delete from email_address_update_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)

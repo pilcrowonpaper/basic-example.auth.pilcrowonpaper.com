@@ -48,7 +48,7 @@ async function handleResetPasswordFormSubmitEvent(event) {
 		return;
 	}
 
-	setPasswordResetTokenCookie(actionResult.valuesJSONObject.password_reset_token);
+	setPasswordResetTokenCookie(actionResult.valuesJSONObject.password_reset_session_token);
 
 	window.location.href = "/reset-password/verify-email-code";
 }

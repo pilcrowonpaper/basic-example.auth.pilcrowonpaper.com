@@ -2,18 +2,16 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-type signupStruct struct {
+type signupSessionStruct struct {
 	id                           string
 	secretHash                   []byte
 	emailAddress                 string
@@ -22,39 +20,17 @@ type signupStruct struct {
 	createdAt                    time.Time
 }
 
-func (signup *signupStruct) compareSecretAgainstHash(secret []byte) bool {
+func (signupSession *signupSessionStruct) compareSecretAgainstHash(secret []byte) bool {
 	hashed := hashSessionSecret(secret)
-	hashEqual := constantTimeCompare(hashed, signup.secretHash)
+	hashEqual := constantTimeCompare(hashed, signupSession.secretHash)
 	return hashEqual
 }
 
-func (signup *signupStruct) compareEmailAddressVerificationCode(emailAddressVerificationCode string) bool {
-	return constantTimeCompareStrings(emailAddressVerificationCode, signup.emailAddressVerificationCode)
+func (signupSession *signupSessionStruct) compareEmailAddressVerificationCode(emailAddressVerificationCode string) bool {
+	return constantTimeCompareStrings(emailAddressVerificationCode, signupSession.emailAddressVerificationCode)
 }
 
-func createSignupToken(signupId string, signupSecret []byte) string {
-	encodedSignupSecret := base64.StdEncoding.EncodeToString(signupSecret)
-	signupToken := signupId + "." + encodedSignupSecret
-	return signupToken
-}
-
-const signupTokenCookieName = "signup_token"
-
-func (server *serverStruct) setBlankSignupTokenCookie(w http.ResponseWriter) {
-	cookie := &http.Cookie{
-		Name:     signupTokenCookieName,
-		Value:    "",
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   -1,
-		Path:     "/",
-		Secure:   server.https,
-	}
-	http.SetCookie(w, cookie)
-}
-
-var errInvalidSignupToken = errors.New("invalid signup token")
-
-func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []byte, error) {
+func (server *serverStruct) createSignupSession(emailAddress string) (signupSessionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
 	id := generateItemId()
@@ -64,7 +40,7 @@ func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []b
 
 	emailAddressVerificationCode := generateEmailAddressVerificationCode()
 
-	signup := signupStruct{
+	signupSession := signupSessionStruct{
 		id:                           id,
 		secretHash:                   secretHash,
 		emailAddress:                 emailAddress,
@@ -75,31 +51,31 @@ func (server *serverStruct) createSignup(emailAddress string) (signupStruct, []b
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return signupStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return signupSessionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO signup (id, secret_hash, email_address, email_address_verification_code, created_at) VALUES (?, ?, ?, ?, ?)", &sqlitex.ExecOptions{
-		Args: []any{signup.id, signup.secretHash, signup.emailAddress, signup.emailAddressVerificationCode, signup.createdAt.Unix()},
+	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO signup_session (id, secret_hash, email_address, email_address_verification_code, created_at) VALUES (?, ?, ?, ?, ?)", &sqlitex.ExecOptions{
+		Args: []any{signupSession.id, signupSession.secretHash, signupSession.emailAddress, signupSession.emailAddressVerificationCode, signupSession.createdAt.Unix()},
 	})
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 	if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
-		return signupStruct{}, nil, errItemConflict
+		return signupSessionStruct{}, nil, errItemConflict
 	}
 	if err != nil {
-		return signupStruct{}, nil, fmt.Errorf("failed to insert into signup table: %s", err.Error())
+		return signupSessionStruct{}, nil, fmt.Errorf("failed to insert into signup_session table: %s", err.Error())
 	}
 
-	return signup, secret, nil
+	return signupSession, secret, nil
 }
 
-func (server *serverStruct) getSignup(signupId string) (signupStruct, error) {
-	signups := []signupStruct{}
+func (server *serverStruct) getSignupSession(signupSessionId string) (signupSessionStruct, error) {
+	signupSessions := []signupSessionStruct{}
 
 	databaseReadConnection, err := server.databaseReadConnectionPool.Take(context.Background())
 	if err != nil {
-		return signupStruct{}, fmt.Errorf("failed to take database read connection: %s", err.Error())
+		return signupSessionStruct{}, fmt.Errorf("failed to take database read connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseReadConnection, "SELECT secret_hash, email_address, email_address_verification_code, email_address_verified, created_at FROM signup WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{signupId},
+	err = sqlitex.Execute(databaseReadConnection, "SELECT secret_hash, email_address, email_address_verification_code, email_address_verified, created_at FROM signup_session WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{signupSessionId},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 
 			secretHash := make([]byte, 32)
@@ -109,8 +85,8 @@ func (server *serverStruct) getSignup(signupId string) (signupStruct, error) {
 			emailAddressVerified := stmt.ColumnBool(3)
 			createdAt := time.Unix(stmt.ColumnInt64(4), 0)
 
-			signup := signupStruct{
-				id:                           signupId,
+			signupSession := signupSessionStruct{
+				id:                           signupSessionId,
 				secretHash:                   secretHash,
 				emailAddress:                 emailAddress,
 				emailAddressVerificationCode: emailAddressVerificationCode,
@@ -118,85 +94,87 @@ func (server *serverStruct) getSignup(signupId string) (signupStruct, error) {
 				createdAt:                    createdAt,
 			}
 
-			signups = append(signups, signup)
+			signupSessions = append(signupSessions, signupSession)
 
 			return nil
 		},
 	})
 	server.databaseReadConnectionPool.Put(databaseReadConnection)
 	if err != nil {
-		return signupStruct{}, fmt.Errorf("failed to select from signup table: %s", err.Error())
+		return signupSessionStruct{}, fmt.Errorf("failed to select from signup_session table: %s", err.Error())
 	}
 
-	if len(signups) < 1 {
-		return signupStruct{}, errItemNotFound
+	if len(signupSessions) < 1 {
+		return signupSessionStruct{}, errItemNotFound
 	}
-	signup := signups[0]
+	signupSession := signupSessions[0]
 
-	if time.Since(signup.createdAt) >= time.Hour*24 {
-		return signupStruct{}, errItemNotFound
+	if time.Since(signupSession.createdAt) >= time.Hour*24 {
+		return signupSessionStruct{}, errItemNotFound
 	}
 
-	return signup, nil
+	return signupSession, nil
 }
 
-func (server *serverStruct) validateSignupToken(signupToken string) (signupStruct, error) {
-	tokenParts := strings.Split(signupToken, ".")
-	if len(tokenParts) != 2 {
-		return signupStruct{}, errInvalidSignupToken
-	}
-	signupId := tokenParts[0]
-	encodedSecret := tokenParts[1]
-	secret, err := base64.StdEncoding.DecodeString(encodedSecret)
+var errInvalidSignupAuthSessionToken = errors.New("invalid signup session token")
+
+func (server *serverStruct) validateSignupAuthSessionToken(signupAuthSessionToken string) (signupSessionStruct, error) {
+	signupSessionId, signupSessionSecret, err := parseSessionToken(signupAuthSessionToken)
 	if err != nil {
-		return signupStruct{}, errInvalidSignupToken
+		return signupSessionStruct{}, errInvalidSignupAuthSessionToken
 	}
 
-	signup, err := server.getSignup(signupId)
+	signupSession, err := server.getSignupSession(signupSessionId)
 	if errors.Is(err, errItemNotFound) {
-		return signupStruct{}, errInvalidSignupToken
+		return signupSessionStruct{}, errInvalidSignupAuthSessionToken
 	}
 	if err != nil {
-		return signupStruct{}, fmt.Errorf("failed to get signup: %s", err.Error())
+		return signupSessionStruct{}, fmt.Errorf("failed to get signup session: %s", err.Error())
 	}
 
-	secretValid := signup.compareSecretAgainstHash(secret)
+	secretValid := signupSession.compareSecretAgainstHash(signupSessionSecret)
 	if !secretValid {
-		return signupStruct{}, errInvalidSignupToken
+		return signupSessionStruct{}, errInvalidSignupAuthSessionToken
 	}
 
-	return signup, nil
+	return signupSession, nil
 }
 
-func (server *serverStruct) validateRequestSignupToken(r *http.Request) (signupStruct, string, error) {
-	signupTokenCookie, err := r.Cookie(signupTokenCookieName)
-	if err != nil {
-		return signupStruct{}, "", errInvalidSignupToken
-	}
-	signupToken := signupTokenCookie.Value
+const signupAuthSessionTokenCookieName = "signup_session_token"
 
-	signup, err := server.validateSignupToken(signupToken)
-	if errors.Is(err, errInvalidSignupToken) {
-		return signupStruct{}, "", errInvalidSignupToken
+func (server *serverStruct) validateRequestSignupAuthSessionToken(r *http.Request) (signupSessionStruct, string, error) {
+	signupAuthSessionTokenCookie, err := r.Cookie(signupAuthSessionTokenCookieName)
+	if err != nil {
+		return signupSessionStruct{}, "", errInvalidSignupAuthSessionToken
+	}
+	signupAuthSessionToken := signupAuthSessionTokenCookie.Value
+
+	signupSession, err := server.validateSignupAuthSessionToken(signupAuthSessionToken)
+	if errors.Is(err, errInvalidSignupAuthSessionToken) {
+		return signupSessionStruct{}, "", errInvalidSignupAuthSessionToken
 	}
 	if err != nil {
-		return signupStruct{}, "", fmt.Errorf("failed to validate signup token: %s", err.Error())
+		return signupSessionStruct{}, "", fmt.Errorf("failed to validate signup session token: %s", err.Error())
 	}
 
-	return signup, signupToken, nil
+	return signupSession, signupAuthSessionToken, nil
 }
 
-func (server *serverStruct) setSignupAsEmailAddressVerified(signupId string) error {
+func (server *serverStruct) setBlankSignupAuthSessionTokenCookie(w http.ResponseWriter) {
+	server.setBlankSessionTokenCookie(w, signupAuthSessionTokenCookieName)
+}
+
+func (server *serverStruct) setSignupSessionAsEmailAddressVerified(signupSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "UPDATE signup SET email_address_verified = 1 WHERE id = ? AND email_address_verified = 0", &sqlitex.ExecOptions{
-		Args: []any{signupId},
+	err = sqlitex.Execute(databaseWriteConnection, "UPDATE signup_session SET email_address_verified = 1 WHERE id = ? AND email_address_verified = 0", &sqlitex.ExecOptions{
+		Args: []any{signupSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to update signup table: %s", err.Error())
+		return fmt.Errorf("failed to update signup_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -206,88 +184,95 @@ func (server *serverStruct) setSignupAsEmailAddressVerified(signupId string) err
 	return nil
 }
 
-func (server *serverStruct) completeSignup(signupId string, userPassword string) (userStruct, sessionStruct, []byte, error) {
+func (server *serverStruct) completeSignup(signupSessionId string, userPassword string) (userStruct, authSessionStruct, []byte, error) {
 	nowSecondPrecision := getCurrentTimeSecondPrecision()
 
 	userId := generateItemId()
 	userPasswordSalt := generateHashingSalt()
 	userPasswordHash := server.hashUserPassword(userPassword, userPasswordSalt)
 
-	sessionId := generateItemId()
-	sessionSecret := generateSessionSecret()
-	sessionSecretHash := hashSessionSecret(sessionSecret)
+	authSessionId := generateItemId()
+	authSessionSecret := generateSessionSecret()
+	authSessionSecretHash := hashSessionSecret(authSessionSecret)
 
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
-		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
+		return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "BEGIN IMMEDIATE", nil)
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to begin transaction: %s", err.Error())
+		return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to begin transaction: %s", err.Error())
 	}
 
 	emailAddresses := []string{}
-	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO user (id, email_address, password_hash, password_salt, created_at) SELECT ?, signup.email_address, ?, ?, ? FROM signup WHERE signup.id = ? AND signup.email_address_verified = 1 RETURNING user.email_address", &sqlitex.ExecOptions{
-		Args: []any{userId, userPasswordHash, userPasswordSalt, nowSecondPrecision.Unix(), signupId},
-		ResultFunc: func(stmt *sqlite.Stmt) error {
-			emailAddress := stmt.ColumnText(0)
-			emailAddresses = append(emailAddresses, emailAddress)
-			return nil
+	err = sqlitex.Execute(
+		databaseWriteConnection,
+		`INSERT INTO user (id, email_address, password_hash, password_salt, created_at)
+SELECT ?, email_address, ?, ?, ? FROM signup_session
+WHERE id = ? AND email_address_verified = 1
+RETURNING email_address`,
+		&sqlitex.ExecOptions{
+			Args: []any{userId, userPasswordHash, userPasswordSalt, nowSecondPrecision.Unix(), signupSessionId},
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				emailAddress := stmt.ColumnText(0)
+				emailAddresses = append(emailAddresses, emailAddress)
+				return nil
+			},
 		},
-	})
+	)
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
 
 		if sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintUnique || sqlite.ErrCode(err).ToPrimary() == sqlite.ResultConstraintForeignKey {
-			return userStruct{}, sessionStruct{}, nil, errItemConflict
+			return userStruct{}, authSessionStruct{}, nil, errItemConflict
 		}
-		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to insert into user table: %s", err.Error())
+		return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to insert into user table: %s", err.Error())
 	}
 	if len(emailAddresses) < 1 {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, sessionStruct{}, nil, errItemNotFound
+		return userStruct{}, authSessionStruct{}, nil, errItemNotFound
 	}
 	emailAddress := emailAddresses[0]
 
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM signup WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{signupId},
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM signup_session WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{signupSessionId},
 	})
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to delete from signup table: %s", err.Error())
+		return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to delete from signup_session table: %s", err.Error())
 	}
 
-	session := sessionStruct{
-		id:         sessionId,
+	authSession := authSessionStruct{
+		id:         authSessionId,
 		userId:     userId,
-		secretHash: sessionSecretHash,
+		secretHash: authSessionSecretHash,
 		createdAt:  nowSecondPrecision,
 	}
 
-	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO session (id, user_id, secret_hash, created_at) VALUES (?, ?, ?, ?)", &sqlitex.ExecOptions{
-		Args: []any{session.id, session.userId, session.secretHash, session.createdAt.Unix()},
+	err = sqlitex.Execute(databaseWriteConnection, "INSERT INTO auth_session (id, user_id, secret_hash, created_at) VALUES (?, ?, ?, ?)", &sqlitex.ExecOptions{
+		Args: []any{authSession.id, authSession.userId, authSession.secretHash, authSession.createdAt.Unix()},
 	})
 	if err != nil {
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to insert into session table: %s", err.Error())
+		return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to insert into auth_session table: %s", err.Error())
 	}
 
 	err = sqlitex.Execute(databaseWriteConnection, "COMMIT", nil)
@@ -295,9 +280,9 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		rollbackErr := sqlitex.Execute(databaseWriteConnection, "ROLLBACK", nil)
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
 		if rollbackErr != nil {
-			return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
+			return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to rollback transaction: %s", rollbackErr.Error())
 		}
-		return userStruct{}, sessionStruct{}, nil, fmt.Errorf("failed to commit transaction: %s", err.Error())
+		return userStruct{}, authSessionStruct{}, nil, fmt.Errorf("failed to commit transaction: %s", err.Error())
 	}
 
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)
@@ -309,20 +294,20 @@ func (server *serverStruct) completeSignup(signupId string, userPassword string)
 		passwordSalt: userPasswordSalt,
 		createdAt:    nowSecondPrecision,
 	}
-	return user, session, sessionSecret, nil
+	return user, authSession, authSessionSecret, nil
 }
 
-func (server *serverStruct) deleteSignup(signupId string) error {
+func (server *serverStruct) deleteSignupSession(signupSessionId string) error {
 	databaseWriteConnection, err := server.databaseWriteConnectionPool.Take(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to take database write connection: %s", err.Error())
 	}
-	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM signup WHERE id = ?", &sqlitex.ExecOptions{
-		Args: []any{signupId},
+	err = sqlitex.Execute(databaseWriteConnection, "DELETE FROM signup_session WHERE id = ?", &sqlitex.ExecOptions{
+		Args: []any{signupSessionId},
 	})
 	if err != nil {
 		server.databaseWriteConnectionPool.Put(databaseWriteConnection)
-		return fmt.Errorf("failed to delete from signup table: %s", err.Error())
+		return fmt.Errorf("failed to delete from signup_session table: %s", err.Error())
 	}
 	affectedCount := databaseWriteConnection.Changes()
 	server.databaseWriteConnectionPool.Put(databaseWriteConnection)

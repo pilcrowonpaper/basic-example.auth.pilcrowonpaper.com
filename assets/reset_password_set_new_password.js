@@ -1,5 +1,5 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
-const passwordResetToken = pageDataJSONObject.password_reset_token;
+const passwordResetSessionToken = pageDataJSONObject.password_reset_session_token;
 
 const setNewPasswordFormElement = document.getElementById("set-new-password-form");
 setNewPasswordFormElement.addEventListener("submit", handleSetNewPasswordFormSubmitEvent);
@@ -17,7 +17,7 @@ async function handleSetNewPasswordFormSubmitEvent(event) {
 	const newPassword = formData.get("new_password");
 
 	const actionValuesJSONObject = {
-		password_reset_token: passwordResetToken,
+		password_reset_session_token: passwordResetSessionToken,
 		new_password: newPassword,
 	};
 
@@ -35,7 +35,7 @@ async function handleSetNewPasswordFormSubmitEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_password_reset_token") {
+		if (actionResult.errorCode === "invalid_password_reset_session_token") {
 			deletePasswordResetTokenCookie();
 
 			alert("Your session has expired.");
@@ -61,7 +61,7 @@ async function handleSetNewPasswordFormSubmitEvent(event) {
 	}
 
 	deletePasswordResetTokenCookie();
-	setSessionTokenCookie(actionResult.valuesJSONObject.session_token);
+	setAuthSessionTokenCookie(actionResult.valuesJSONObject.auth_session_token);
 
 	window.location.href = "/account";
 }
@@ -70,7 +70,7 @@ async function handleCancelButtonClickEvent(event) {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
-		password_reset_token: passwordResetToken,
+		password_reset_session_token: passwordResetSessionToken,
 	};
 
 	let actionResult;
@@ -84,7 +84,7 @@ async function handleCancelButtonClickEvent(event) {
 	}
 
 	if (!actionResult.ok) {
-		if (actionResult.errorCode === "invalid_password_reset_token") {
+		if (actionResult.errorCode === "invalid_password_reset_session_token") {
 			deletePasswordResetTokenCookie();
 
 			alert("Your session has expired.");
