@@ -3,64 +3,22 @@ const sessionToken = pageDataJSONObject.session_token;
 const accountDeletionToken = pageDataJSONObject.account_deletion_token;
 
 const confirmButtonElement = document.getElementById("confirm-button");
-confirmButtonElement.addEventListener("click", async () => {
+confirmButtonElement.addEventListener("click", handleConfirmButtonClickEvent);
+
+const cancelButtonElement = document.getElementById("cancel-button");
+cancelButtonElement.addEventListener("click", handleCancelButtonClickEvent);
+
+async function handleConfirmButtonClickEvent() {
 	confirmButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
 		session_token: sessionToken,
 		account_deletion_token: accountDeletionToken,
 	};
-	const requestBodyJSONObject = {
-		action: "confirm_account_deletion",
-		values: actionValuesJSONObject,
-	};
-	const requestBody = JSON.stringify(requestBodyJSONObject);
 
-	const request = new Request("/action", {
-		method: "POST",
-		body: requestBody,
-	});
-	request.headers.set("Content-Type", "application/json");
-
+	let actionResult;
 	try {
-		const response = await fetch(request);
-		if (!response.ok) {
-			await response.body.cancel();
-			throw new Error(`Unexpected response status code ${response.status}`);
-		}
-		const resultJSONObject = await response.json();
-		if (!resultJSONObject.ok) {
-			if (resultJSONObject.error_code === "invalid_session_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/sign-in";
-				return;
-			}
-			if (resultJSONObject.error_code === "invalid_account_deletion_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/account";
-				return;
-			}
-			if (resultJSONObject.error_code === "rate_limited") {
-				alert("Too many attempts. Please try again later.");
-				confirmButtonElement.disabled = false;
-				return;
-			}
-			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
+		actionResult = await sendActionRequest("confirm_account_deletion", actionValuesJSONObject);
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -68,71 +26,52 @@ confirmButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	if (window.location.protocol === "https:") {
-		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-	} else {
-		document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
-		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	if (!actionResult.ok) {
+		if (actionResult.errorCode === "invalid_session_token") {
+			deleteSessionToken();
+			deleteAccountDeletionTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/sign-in";
+			return;
+		}
+		if (actionResult.errorCode === "invalid_account_deletion_token") {
+			deleteAccountDeletionTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/account";
+			return;
+		}
+		if (actionResult.errorCode === "rate_limited") {
+			alert("Too many attempts. Please try again later.");
+			confirmButtonElement.disabled = false;
+			return;
+		}
+
+		const error = new Error(`Unexpected error code ${actionResult.errorCode}`);
+		console.error(error);
+		alert("An unexpected error occurred. Please try again.");
+		confirmButtonElement.disabled = false;
+		return;
 	}
 
+	deleteAccountDeletionTokenCookie();
+	deleteSessionTokenCookie();
+
 	window.location.href = "/";
-});
+}
 
-const cancelButtonElement = document.getElementById("cancel-button");
-
-cancelButtonElement.addEventListener("click", async () => {
+async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
 		session_token: sessionToken,
 		account_deletion_token: accountDeletionToken,
 	};
-	const requestBodyJSONObject = {
-		action: "cancel_account_deletion",
-		values: actionValuesJSONObject,
-	};
-	const requestBody = JSON.stringify(requestBodyJSONObject);
 
-	const request = new Request("/action", {
-		method: "POST",
-		body: requestBody,
-	});
-	request.headers.set("Content-Type", "application/json");
+	let actionResult;
 	try {
-		const response = await fetch(request);
-		if (!response.ok) {
-			await response.body.cancel();
-			throw new Error(`Unexpected response status code ${response.status}`);
-		}
-		const resultJSONObject = await response.json();
-		if (!resultJSONObject.ok) {
-			if (resultJSONObject.error_code === "invalid_session_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `session_token=; Max-Age=0; SameSite=Lax; Path=/`;
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/sign-in";
-				return;
-			}
-			if (resultJSONObject.error_code === "invalid_account_deletion_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/account";
-				return;
-			}
-			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
+		actionResult = await sendActionRequest("cancel_account_deletion", actionValuesJSONObject);
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -140,11 +79,31 @@ cancelButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	if (window.location.protocol === "https:") {
-		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-	} else {
-		document.cookie = `account_deletion_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	if (!actionResult.ok) {
+		if (actionResult.errorCode === "invalid_session_token") {
+			deleteSessionToken();
+			deleteAccountDeletionTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/sign-in";
+			return;
+		}
+		if (actionResult.errorCode === "invalid_account_deletion_token") {
+			deleteAccountDeletionTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/account";
+			return;
+		}
+
+		const error = new Error(`Unexpected error code ${actionResult.errorCode}`);
+		console.error(error);
+		alert("An unexpected error occurred. Please try again.");
+		cancelButtonElement.disabled = false;
+		return;
 	}
 
+	deleteAccountDeletionTokenCookie();
+
 	window.location.href = "/account";
-});
+}

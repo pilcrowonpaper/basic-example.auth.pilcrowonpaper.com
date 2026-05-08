@@ -64,9 +64,9 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 		<p>Request ID: %s</p>
 	</footer>
 </body>
-<script type="module">%s</script>
 <script id="data" type="application/json">%s</script>
-<script type="module">%s</script>
+<script>%s</script>
+<script>%s</script>
 </html>`
 
 	pageHTML := fmt.Sprintf(
@@ -77,9 +77,9 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 		stylesheet,
 		bodyHTML,
 		html.EscapeString(requestId),
-		script,
 		dataJSON,
 		baseScript,
+		script,
 	)
 
 	return pageHTML

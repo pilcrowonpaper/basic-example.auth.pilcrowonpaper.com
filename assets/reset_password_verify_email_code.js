@@ -1,7 +1,16 @@
 const pageDataJSONObject = JSON.parse(document.getElementById("data").innerText);
 const passwordResetToken = pageDataJSONObject.password_reset_token;
 
-document.getElementById("verify-email-code-form").addEventListener("submit", async (event) => {
+const verifyEmailCodeFormElement = document.getElementById("verify-email-code-form");
+verifyEmailCodeFormElement.addEventListener("submit", handleVerifyEmailCodeFormSubmitEvent);
+
+const resendEmailCodeButtonElement = document.getElementById("resend-email-code-button");
+resendEmailCodeButtonElement.addEventListener("click", handleResendEmailCodeButtonClickEvent);
+
+const cancelButtonElement = document.getElementById("cancel-button");
+cancelButtonElement.addEventListener("click", handleCancelButtonClickEvent);
+
+async function handleVerifyEmailCodeFormSubmitEvent(event) {
 	event.preventDefault();
 
 	const submitButtonElement = document.getElementById("verify-email-code-form-submit-button");
@@ -15,49 +24,13 @@ document.getElementById("verify-email-code-form").addEventListener("submit", asy
 		password_reset_token: passwordResetToken,
 		email_code: emailCode,
 	};
-	const requestBodyJSONObject = {
-		action: "verify_password_reset_email_code",
-		values: actionValuesJSONObject,
-	};
-	const requestBody = JSON.stringify(requestBodyJSONObject);
 
-	const request = new Request("/action", {
-		method: "POST",
-		body: requestBody,
-	});
-	request.headers.set("Content-Type", "application/json");
-
+	let actionResult;
 	try {
-		const response = await fetch(request);
-		if (!response.ok) {
-			await response.body.cancel();
-			throw new Error(`Unexpected response status code ${response.status}`);
-		}
-		const resultJSONObject = await response.json();
-		if (!resultJSONObject.ok) {
-			if (resultJSONObject.error_code === "invalid_password_reset_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/reset-password";
-				return;
-			}
-			if (resultJSONObject.error_code === "incorrect_email_code") {
-				alert("Incorrect email code.");
-				submitButtonElement.disabled = false;
-				return;
-			}
-			if (resultJSONObject.error_code === "rate_limited") {
-				alert("Too many attempts. Please try again later.");
-				submitButtonElement.disabled = false;
-				return;
-			}
-			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
+		actionResult = await sendActionRequest(
+			"verify_password_reset_email_code",
+			actionValuesJSONObject,
+		);
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -65,56 +38,70 @@ document.getElementById("verify-email-code-form").addEventListener("submit", asy
 		return;
 	}
 
+	if (!actionResult.ok) {
+		if (actionResult.errorCode === "invalid_password_reset_token") {
+			deletePasswordResetTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/reset-password";
+			return;
+		}
+		if (actionResult.errorCode === "incorrect_email_code") {
+			alert("Incorrect email code.");
+			submitButtonElement.disabled = false;
+			return;
+		}
+		if (actionResult.errorCode === "rate_limited") {
+			alert("Too many attempts. Please try again later.");
+			submitButtonElement.disabled = false;
+			return;
+		}
+
+		const error = new Error(`Unexpected error code ${actionResult.errorCode}`);
+		console.error(error);
+		alert("An unexpected error occurred. Please try again.");
+		submitButtonElement.disabled = false;
+		return;
+	}
+
 	window.location.href = "/reset-password/set-new-password";
-});
+}
 
-const resendEmailCodeButtonElement = document.getElementById("resend-email-code-button");
-
-resendEmailCodeButtonElement.addEventListener("click", async () => {
+async function handleResendEmailCodeButtonClickEvent() {
 	resendEmailCodeButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
 		password_reset_token: passwordResetToken,
 	};
-	const requestBodyJSONObject = {
-		action: "send_password_reset_email_code",
-		values: actionValuesJSONObject,
-	};
-	const requestBody = JSON.stringify(requestBodyJSONObject);
 
-	const request = new Request("/action", {
-		method: "POST",
-		body: requestBody,
-	});
-	request.headers.set("Content-Type", "application/json");
-
+	let actionResult;
 	try {
-		const response = await fetch(request);
-		if (!response.ok) {
-			await response.body.cancel();
-			throw new Error(`Unexpected response status code ${response.status}`);
-		}
-		const resultJSONObject = await response.json();
-		if (!resultJSONObject.ok) {
-			if (resultJSONObject.error_code === "invalid_password_reset_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/reset-password";
-				return;
-			}
-			if (resultJSONObject.error_code === "rate_limited") {
-				alert("Too many attempts. Please try again later.");
-				resendEmailCodeButtonElement.disabled = false;
-				return;
-			}
-			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
+		actionResult = await sendActionRequest(
+			"send_password_reset_email_code",
+			actionValuesJSONObject,
+		);
 	} catch (error) {
+		console.error(error);
+		alert("An unexpected error occurred. Please try again.");
+		resendEmailCodeButtonElement.disabled = false;
+		return;
+	}
+
+	if (!actionResult.ok) {
+		if (actionResult.errorCode === "invalid_password_reset_token") {
+			deletePasswordResetTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/reset-password";
+			return;
+		}
+		if (actionResult.errorCode === "rate_limited") {
+			alert("Too many attempts. Please try again later.");
+			resendEmailCodeButtonElement.disabled = false;
+			return;
+		}
+
+		const error = new Error(`Unexpected error code ${actionResult.errorCode}`);
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
 		resendEmailCodeButtonElement.disabled = false;
@@ -123,49 +110,18 @@ resendEmailCodeButtonElement.addEventListener("click", async () => {
 
 	alert("We've sent another email to your inbox.");
 	resendEmailCodeButtonElement.disabled = false;
-});
+}
 
-const cancelButtonElement = document.getElementById("cancel-button");
-
-cancelButtonElement.addEventListener("click", async () => {
+async function handleCancelButtonClickEvent() {
 	cancelButtonElement.disabled = true;
 
 	const actionValuesJSONObject = {
 		password_reset_token: passwordResetToken,
 	};
-	const requestBodyJSONObject = {
-		action: "cancel_password_reset",
-		values: actionValuesJSONObject,
-	};
-	const requestBody = JSON.stringify(requestBodyJSONObject);
 
-	const request = new Request("/action", {
-		method: "POST",
-		body: requestBody,
-	});
-	request.headers.set("Content-Type", "application/json");
-
+	let actionResult;
 	try {
-		const response = await fetch(request);
-		if (!response.ok) {
-			await response.body.cancel();
-			throw new Error(`Unexpected response status code ${response.status}`);
-		}
-		const resultJSONObject = await response.json();
-		if (!resultJSONObject.ok) {
-			if (resultJSONObject.error_code === "invalid_password_reset_token") {
-				if (window.location.protocol === "https:") {
-					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-				} else {
-					document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
-				}
-
-				alert("Your session has expired.");
-				window.location.href = "/reset-password";
-				return;
-			}
-			throw new Error(`Unexpected error code ${resultJSONObject.error_code}`);
-		}
+		actionResult = await sendActionRequest("cancel_password_reset", actionValuesJSONObject);
 	} catch (error) {
 		console.error(error);
 		alert("An unexpected error occurred. Please try again.");
@@ -173,11 +129,23 @@ cancelButtonElement.addEventListener("click", async () => {
 		return;
 	}
 
-	if (window.location.protocol === "https:") {
-		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/; Secure`;
-	} else {
-		document.cookie = `password_reset_token=; Max-Age=0; SameSite=Lax; Path=/`;
+	if (!actionResult.ok) {
+		if (actionResult.errorCode === "invalid_password_reset_token") {
+			deletePasswordResetTokenCookie();
+
+			alert("Your session has expired.");
+			window.location.href = "/reset-password";
+			return;
+		}
+
+		const error = new Error(`Unexpected error code ${actionResult.errorCode}`);
+		console.error(error);
+		alert("An unexpected error occurred. Please try again.");
+		cancelButtonElement.disabled = false;
+		return;
 	}
 
+	deletePasswordResetTokenCookie();
+
 	window.location.href = "/reset-password";
-});
+}
