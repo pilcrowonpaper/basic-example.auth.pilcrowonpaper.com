@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"time"
 
@@ -37,7 +36,6 @@ func (server *serverStruct) hashPasswordResetEmailCode(emailCode string, salt []
 	server.cpuIntensiveSemaphore.Acquire(context.Background(), 1)
 	emailCodeHash := argon2.IDKey([]byte(emailCode), salt, 1, 16*1024, 3, 32)
 	server.cpuIntensiveSemaphore.Release(1)
-	runtime.GC()
 	return emailCodeHash
 }
 
