@@ -1315,7 +1315,7 @@ func (server *serverStruct) verifyPasswordResetEmailCodeAction(requestId string,
 		return errorCodeRateLimited
 	}
 
-	emailCodeHash := server.hashUserPassword(emailCode, passwordResetSession.emailCodeSalt)
+	emailCodeHash := server.hashPasswordResetEmailCode(emailCode, passwordResetSession.emailCodeSalt)
 	emailCodeCorrect := constantTimeCompare(passwordResetSession.emailCodeHash, emailCodeHash)
 	if !emailCodeCorrect {
 		server.logPasswordResetCodeVerificationFailedRequestEvent(requestId, clientIPAddress, passwordResetSession.id, passwordResetSession.userId, userEmailAddress)
