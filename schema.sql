@@ -60,7 +60,8 @@ CREATE TABLE password_reset_session (
     id TEXT NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
     secret_hash BLOB NOT NULL,
-    email_code TEXT NOT NULL,
+    email_code_hash BLOB NOT NULL,
+    email_code_salt BLOB NOT NULL,
     user_identity_verified INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL
 ) STRICT;

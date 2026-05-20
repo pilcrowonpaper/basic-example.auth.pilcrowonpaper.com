@@ -638,24 +638,6 @@ func (server *serverStruct) actionRoute(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if actionName == actionSendPasswordResetEmailCode {
-		passwordResetSessionToken, err := values.GetString("password_reset_session_token")
-		if err != nil {
-			w.WriteHeader(400)
-			return
-		}
-		errorCode := server.sendPasswordResetEmailCodeAction(requestId, clientIPAddress, passwordResetSessionToken)
-		if errorCode != "" {
-			server.logActionErrorResult(requestId, clientIPAddress, actionCancelPasswordReset, errorCode)
-			writeActionErrorResult(w, requestId, errorCode)
-			return
-		}
-		server.logActionSuccessResult(requestId, clientIPAddress, actionCancelPasswordReset)
-
-		writeActionSuccessResult(w, requestId, "{}")
-		return
-	}
-
 	if actionName == actionVerifyPasswordResetEmailCode {
 		passwordResetSessionToken, err := values.GetString("password_reset_session_token")
 		if err != nil {
@@ -1698,10 +1680,7 @@ func (server *serverStruct) resetPasswordVerifyEmailCodePageRoute(w http.Respons
 	<input id="verify-email-code-form-code-input" name="email_code" autocomplete="none" required />
 	<button id="verify-email-code-form-submit-button">Continue</button>
 </form>
-<div id="controls">
-	<button id="resend-email-code-button" class="link-button">Resend verification code</button>
-	<button id="cancel-button" class="link-button">Cancel</button>
-</div>`
+<button id="cancel-button" class="link-button">Cancel</button>`
 	bodyHTML := fmt.Sprintf(bodyHTMLTemplate, html.EscapeString(userEmailAddress))
 
 	pageDataJSONBuilder := json.NewObjectBuilder(htmlSafeJSONStringCharacterEscapingBehavior)
