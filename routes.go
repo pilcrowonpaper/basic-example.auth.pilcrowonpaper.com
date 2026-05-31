@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"html"
@@ -737,23 +738,23 @@ func (server *serverStruct) homePageRoute(w http.ResponseWriter, r *http.Request
 	if !errors.Is(err, errInvalidAuthSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeHomePage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
 	pageTitle := "Basic auth example"
 	bodyHTML := `<h1>Basic auth example</h1>
-<p>This an example website that implements email address and password authentication following best practices.
+<p>This an example website that implements email address and password authentication.
 All accounts older than 24 hours are automatically deleted at midnight (UTC).</p>
 <div id="auth">
 	<a href="/sign-in" class="block-button">Sign in</a>
 	<a href="/sign-up" class="block-button">Create an account</a>
 </div>`
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, "", homePageStylesheet, "")
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, "", homePageStylesheet, "")
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/account.js
@@ -773,8 +774,8 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeAccountPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -788,8 +789,8 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeAccountPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -824,9 +825,9 @@ func (server *serverStruct) accountPageRoute(w http.ResponseWriter, r *http.Requ
 	pageDataJSONBuilder.AddString("auth_session_token", authSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, accountPageScript, accountPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, accountPageScript, accountPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/sign_up.js
@@ -845,8 +846,8 @@ func (server *serverStruct) signUpPageRoute(w http.ResponseWriter, r *http.Reque
 	if !errors.Is(err, errInvalidAuthSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -864,9 +865,9 @@ We do not share or sell this data to any third parties.</p>
 </form>
 <a id="sign-in-link" href="/sign-in" class="link-button">Sign in with an existing account</a>`
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signUpPageScript, signUpPageStylesheet, "")
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, signUpPageScript, signUpPageStylesheet, "")
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/sign_up_verify_email_address.js
@@ -885,8 +886,8 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	if !errors.Is(err, errInvalidAuthSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpVerifyEmailAddressPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -900,8 +901,8 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpVerifyEmailAddressPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -930,9 +931,9 @@ func (server *serverStruct) signUpVerifyEmailAddressPageRoute(w http.ResponseWri
 	pageDataJSONBuilder.AddString("signup_session_token", signupAuthSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signUpVerifyEmailAddressPageScript, signUpVerifyEmailAddressPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, signUpVerifyEmailAddressPageScript, signUpVerifyEmailAddressPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/sign_up_set_password.js
@@ -951,8 +952,8 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	if !errors.Is(err, errInvalidAuthSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpSetPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -966,8 +967,8 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request signup session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeSignUpSetPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -994,9 +995,9 @@ func (server *serverStruct) signUpSetPasswordPageRoute(w http.ResponseWriter, r 
 	pageDataJSONBuilder.AddString("signup_session_token", signupAuthSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signUpSetPasswordPageScript, signUpSetPasswordPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, signUpSetPasswordPageScript, signUpSetPasswordPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/sign_in.js
@@ -1015,8 +1016,8 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 	if !errors.Is(err, errInvalidAuthSessionToken) {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeSignInPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1035,9 +1036,9 @@ func (server *serverStruct) signInPageRoute(w http.ResponseWriter, r *http.Reque
 	<a id="forgot-password-link" href="/reset-password" class="link-button">Forgot password</a>
 </div>`
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, signInPageScript, signInPageStylesheet, "")
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, signInPageScript, signInPageStylesheet, "")
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/update_password_verify_password.js
@@ -1057,8 +1058,8 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1072,8 +1073,8 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1101,8 +1102,8 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1123,9 +1124,9 @@ func (server *serverStruct) updatePasswordVerifyPasswordPageRoute(w http.Respons
 	pageDataJSONBuilder.AddString("password_update_session_token", passwordUpdateSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updatePasswordVerifyPasswordPageScript, updatePasswordVerifyPasswordPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, updatePasswordVerifyPasswordPageScript, updatePasswordVerifyPasswordPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/update_password_set_new_password.js
@@ -1145,8 +1146,8 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordSetNewPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1160,8 +1161,8 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password update session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdatePasswordSetNewPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1194,9 +1195,9 @@ func (server *serverStruct) updatePasswordSetNewPasswordPageRoute(w http.Respons
 	pageDataJSONBuilder.AddString("password_update_session_token", passwordUpdateSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updatePasswordSetNewPasswordPageScript, updatePasswordSetNewPasswordPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, updatePasswordSetNewPasswordPageScript, updatePasswordSetNewPasswordPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/update_email_address_verify_password.js
@@ -1216,8 +1217,8 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1231,8 +1232,8 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1260,8 +1261,8 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1282,9 +1283,9 @@ func (server *serverStruct) updateEmailAddressVerifyPasswordPageRoute(w http.Res
 	pageDataJSONBuilder.AddString("email_address_update_session_token", emailAddressUpdateSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressVerifyPasswordPageScript, updateEmailAddressVerifyPasswordPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressVerifyPasswordPageScript, updateEmailAddressVerifyPasswordPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/update_email_address_set_new_email_address.js
@@ -1304,8 +1305,8 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressSetNewEmailAddressPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1319,8 +1320,8 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressSetNewEmailAddressPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1358,9 +1359,9 @@ func (server *serverStruct) updateEmailAddressSetNewEmailAddressPageRoute(w http
 	pageDataJSONBuilder.AddString("email_address_update_session_token", emailAddressUpdateSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressSetNewEmailAddressPageScript, updateEmailAddressSetNewEmailAddressPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressSetNewEmailAddressPageScript, updateEmailAddressSetNewEmailAddressPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/update_email_address_verify_new_email_address.js
@@ -1380,8 +1381,8 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyNewEmailAddressPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1395,8 +1396,8 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request email address update session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyNewEmailAddressPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1422,8 +1423,8 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 		errorMessage := "news email address verification code not defined"
 		server.logRouteInternalError(requestId, clientIPAddress, routeUpdateEmailAddressVerifyNewEmailAddressPage, errorMessage)
 		server.setBlankEmailAddressUpdateTokenCookie(w)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1447,9 +1448,9 @@ func (server *serverStruct) updateEmailAddressVerifyNewEmailAddressPageRoute(w h
 	pageDataJSONBuilder.AddString("email_address_update_session_token", emailAddressUpdateSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressVerifyNewEmailAddressPageScript, updateEmailAddressVerifyNewEmailAddressPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, updateEmailAddressVerifyNewEmailAddressPageScript, updateEmailAddressVerifyNewEmailAddressPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/delete_account_verify_password.js
@@ -1469,8 +1470,8 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1484,8 +1485,8 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1513,8 +1514,8 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get user: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountVerifyPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1535,9 +1536,9 @@ func (server *serverStruct) deleteAccountVerifyPasswordPageRoute(w http.Response
 	pageDataJSONBuilder.AddString("account_deletion_session_token", accountDeletionSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, deleteAccountVerifyPasswordPageScript, deleteAccountVerifyPasswordPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, deleteAccountVerifyPasswordPageScript, deleteAccountVerifyPasswordPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/delete_account_confirm.js
@@ -1557,8 +1558,8 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request auth session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountConfirmPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1572,8 +1573,8 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request account deletion token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeDeleteAccountConfirmPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1604,9 +1605,9 @@ func (server *serverStruct) deleteAccountConfirmPageRoute(w http.ResponseWriter,
 	pageDataJSONBuilder.AddString("account_deletion_session_token", accountDeletionSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, deleteAccountConfirmPageScript, deleteAccountConfirmPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, deleteAccountConfirmPageScript, deleteAccountConfirmPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/reset_password.js
@@ -1623,9 +1624,9 @@ func (server *serverStruct) resetPasswordPageRoute(w http.ResponseWriter, reques
 	<button id="reset-password-form-submit-button">Continue</button>
 </form>`
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordPageScript, "", "")
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordPageScript, "", "")
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/reset_password_verify_email_code.js
@@ -1645,8 +1646,8 @@ func (server *serverStruct) resetPasswordVerifyEmailCodePageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordVerifyEmailCodePage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1666,8 +1667,8 @@ func (server *serverStruct) resetPasswordVerifyEmailCodePageRoute(w http.Respons
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get password reset session user email address: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordVerifyEmailCodePage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1687,9 +1688,9 @@ func (server *serverStruct) resetPasswordVerifyEmailCodePageRoute(w http.Respons
 	pageDataJSONBuilder.AddString("password_reset_session_token", passwordResetSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordVerifyEmailCodePageScript, resetPasswordVerifyEmailCodePageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordVerifyEmailCodePageScript, resetPasswordVerifyEmailCodePageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
 //go:embed assets/reset_password_set_new_password.js
@@ -1709,8 +1710,8 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to validate request password reset session token: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordSetNewPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1730,8 +1731,8 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to get password reset session user: %s", err.Error())
 		server.logRouteInternalError(requestId, clientIPAddress, routeResetPasswordSetNewPasswordPage, errorMessage)
-		pageHTML := createUnexpectedErrorErrorPageHTML(requestId)
-		writePageHTMLResponse(w, 500, pageHTML)
+		pageHTML, pageScriptHashes, pageStylesheetHashes := createUnexpectedErrorErrorPageHTML(requestId)
+		writePageHTMLResponse(w, 500, pageHTML, pageScriptHashes, pageStylesheetHashes)
 		return
 	}
 
@@ -1752,17 +1753,41 @@ func (server *serverStruct) resetPasswordSetNewPasswordPageRoute(w http.Response
 	pageDataJSONBuilder.AddString("password_reset_session_token", passwordResetSessionToken)
 	pageDataJSON := pageDataJSONBuilder.Done()
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordSetNewPasswordPageScript, resetPasswordSetNewPasswordPageStylesheet, pageDataJSON)
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, resetPasswordSetNewPasswordPageScript, resetPasswordSetNewPasswordPageStylesheet, pageDataJSON)
 
-	writePageHTMLResponse(w, 200, pageHTML)
+	writePageHTMLResponse(w, 200, pageHTML, pageScriptHashes, pageStylesheetHashes)
 }
 
-func writePageHTMLResponse(w http.ResponseWriter, statusCode int, pageHTML string) {
+func writePageHTMLResponse(w http.ResponseWriter, statusCode int, pageHTML string, pageScriptHashes [][]byte, pageStylesheetHashes [][]byte) {
 	pageHTMLBytes := []byte(pageHTML)
+
+	cspScriptSourceItems := []string{}
+	for _, pageScriptHash := range pageScriptHashes {
+		encodedPageScriptHash := base64.StdEncoding.EncodeToString(pageScriptHash)
+		cspScriptSourceItem := fmt.Sprintf("'sha256-%s'", encodedPageScriptHash)
+		cspScriptSourceItems = append(cspScriptSourceItems, cspScriptSourceItem)
+	}
+	cspScriptSourceValue := strings.Join(cspScriptSourceItems, " ")
+
+	cspStylesheetSourceItems := []string{}
+	for _, pageStylesheetHash := range pageStylesheetHashes {
+		encodedPageStylesheetHash := base64.StdEncoding.EncodeToString(pageStylesheetHash)
+		cspStylesheetSourceItem := fmt.Sprintf("'sha256-%s'", encodedPageStylesheetHash)
+		cspStylesheetSourceItems = append(cspStylesheetSourceItems, cspStylesheetSourceItem)
+	}
+	cspStylesheetSourceValue := strings.Join(cspStylesheetSourceItems, " ")
+
+	cspHeader := fmt.Sprintf(
+		"default-src 'none'; script-src %s; base-uri 'none'; img-src https://pilcrowonpaper.com/pilcrow.jpeg; style-src %s; frame-ancestors 'none'; form-action 'none';",
+		cspScriptSourceValue,
+		cspStylesheetSourceValue,
+	)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Length", strconv.Itoa(len(pageHTMLBytes)))
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Content-Security-Policy", cspHeader)
+
 	w.WriteHeader(statusCode)
 	w.Write(pageHTMLBytes)
 }

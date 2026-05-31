@@ -1,4 +1,4 @@
-This is the source code for my basic auth example, a website that implements email address and password authentication following best practices. All accounts older than 24 hours are automatically deleted at midnight UTC.
+This is the source code for my basic auth example, a website that implements email address and password authentication. All accounts older than 24 hours are automatically deleted at midnight UTC.
 
 Website: basic-example.auth.pilcrowonpaper.com
 Repository: github.com/pilcrowonpaper/basic-example.auth.pilcrowonpaper.com

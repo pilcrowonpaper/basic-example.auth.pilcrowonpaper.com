@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"html"
 
@@ -9,15 +10,15 @@ import (
 	_ "embed"
 )
 
-func createUnexpectedErrorErrorPageHTML(requestId string) string {
+func createUnexpectedErrorErrorPageHTML(requestId string) (string, [][]byte, [][]byte) {
 	pageTitle := "An unexpected error occurred | Basic auth example"
 
 	bodyHTML := `<h1>An unexpected error occurred</h1>
 <p>Something went wrong. Please refresh the page or try again later.</p>`
 
-	pageHTML := createPageHTML(requestId, pageTitle, bodyHTML, "", "", "")
+	pageHTML, pageScriptHashes, pageStylesheetHashes := createPageHTML(requestId, pageTitle, bodyHTML, "", "", "")
 
-	return pageHTML
+	return pageHTML, pageScriptHashes, pageStylesheetHashes
 }
 
 //go:embed assets/base.css
@@ -26,11 +27,19 @@ var baseStylesheet string
 //go:embed assets/base.js
 var baseScript string
 
-func createPageHTML(requestId string, title string, bodyHTML string, script string, stylesheet string, dataJSON string) string {
+func createPageHTML(requestId string, title string, bodyHTML string, script string, stylesheet string, dataJSON string) (string, [][]byte, [][]byte) {
+	baseScriptHash := sha256.Sum256([]byte(baseScript))
+	scriptHash := sha256.Sum256([]byte(script))
+	scriptHashes := [][]byte{baseScriptHash[:], scriptHash[:]}
+
+	baseStylesheetHash := sha256.Sum256([]byte(baseStylesheet))
+	stylesheetHash := sha256.Sum256([]byte(stylesheet))
+	stylesheetHashes := [][]byte{baseStylesheetHash[:], stylesheetHash[:]}
+
 	htmlTemplate := `<html lang="en">
 <head>
 	<title>%s</title>
-	<meta name="description" content="An example website that implements email address and password authentication following best practices." />
+	<meta name="description" content="An example website that implements email address and password authentication." />
 
 	<meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
@@ -39,7 +48,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="en_US" />
 	<meta property="og:site_name" content="Basic auth example" />
-	<meta property="og:description" content="An example website that implements email address and password authentication following best practices." />
+	<meta property="og:description" content="An example website that implements email address and password authentication." />
 	<meta property="og:url" content="https://basic-example.auth.pilcrowonpaper.com" />
 	<meta property="og:image" content="https://pilcrowonpaper.com/pilcrow.jpeg" />
 
@@ -82,7 +91,7 @@ func createPageHTML(requestId string, title string, bodyHTML string, script stri
 		script,
 	)
 
-	return pageHTML
+	return pageHTML, scriptHashes, stylesheetHashes
 }
 
 var htmlSafeJSONStringCharacterEscapingBehavior json.StringCharacterEscapingBehaviorInterface = htmlSafeJSONStringCharacterEscapingBehaviorStruct{}
