@@ -1778,7 +1778,7 @@ func writePageHTMLResponse(w http.ResponseWriter, statusCode int, pageHTML strin
 	cspStylesheetSourceValue := strings.Join(cspStylesheetSourceItems, " ")
 
 	cspHeader := fmt.Sprintf(
-		"default-src 'none'; script-src %s; base-uri 'none'; img-src https://pilcrowonpaper.com/pilcrow.jpeg; style-src %s; frame-ancestors 'none'; form-action 'none';",
+		"default-src 'none'; script-src %s; base-uri 'none'; img-src https://pilcrowonpaper.com/pilcrow.jpeg; connect-src 'self'; style-src %s; frame-ancestors 'none'; form-action 'none';",
 		cspScriptSourceValue,
 		cspStylesheetSourceValue,
 	)
